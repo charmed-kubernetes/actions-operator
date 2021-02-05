@@ -1,0 +1,17 @@
+name: Test Operator Setup
+on: [push]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    name: Setup operator environment
+    steps:
+      - uses: adam-stokes/actions-operator@master
+        with:
+          provider: lxd
+
+      - name: Deploy ubuntu
+        run: |
+          juju deploy ubuntu
+          juju status
+          exit $?

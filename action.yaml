@@ -1,0 +1,14 @@
+name: "Setup Operator environment"
+description: "Setup a operator environment"
+author: "Adam Stokes"
+inputs:
+  provider:
+    description: "Which Juju provider to use"
+    required: false
+    default: "lxd"
+runs:
+  using: "node12"
+  main: "dist/index.js"
+branding:
+  icon: "play"
+  color: "blue"
