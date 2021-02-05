@@ -6,7 +6,7 @@ jobs:
     runs-on: ubuntu-latest
     name: Setup operator environment
     steps:
-      - uses: adam-stokes/actions-operator@master
+      - uses: charmed-kubernetes/actions-operator@master
         with:
           provider: lxd
 
