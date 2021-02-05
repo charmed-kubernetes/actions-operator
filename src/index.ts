@@ -5,7 +5,7 @@ async function run() {
     const provider = core.getInput("provider");
     try {
         core.addPath('/snap/bin');
-        await exec.exec("pip install tox");
+        await exec.exec("pip3 install tox");
         if (provider === "lxd") {
             await exec.exec("sudo apt-get remove -qy lxd lxd-client");
             await exec.exec("sudo snap install core");
