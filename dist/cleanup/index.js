@@ -44,7 +44,7 @@ function run() {
         const provider = core.getInput("provider");
         try {
             core.addPath('/snap/bin');
-            yield exec.exec(`juju destroy-controller -y github-pr-${GITHUB_SHA} --destroy-all-models`);
+            yield exec.exec(`juju destroy-controller -y github-pr-${GITHUB_SHA} --destroy-all-models --destroy-storage`);
         }
         catch (error) {
             core.setFailed(error.message);

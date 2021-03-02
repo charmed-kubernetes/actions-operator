@@ -41,13 +41,16 @@ const exec = __importStar(__nccwpck_require__(514));
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
         const GITHUB_SHA = process.env["GITHUB_SHA"].slice(0, 5);
-        var known_providers = ["aws", "azure", "google", "lxd"];
+        let known_providers = new Map([
+            ["aws", "aws/us-east-1"],
+            ["lxd", "localhost/localhost"]
+        ]);
         const provider = core.getInput("provider");
-        const bootstrap_options = `github-pr-${GITHUB_SHA} --model-default test-mode=true --model-default image-stream=daily --model-default automatically-retry-hooks=false --model-default logging-config="<root>=DEBUG"`;
+        const bootstrap_options = `github-pr-${GITHUB_SHA} --bootstrap-constraints "cores=2 mem=4G" --model-default test-mode=true --model-default image-stream=daily --model-default automatically-retry-hooks=false --model-default logging-config="<root>=DEBUG"`;
         try {
             core.addPath('/snap/bin');
             yield exec.exec("pip3 install tox");
-            if (known_providers.includes(provider)) {
+            if (known_providers.has(provider)) {
                 if (provider === "lxd") {
                     yield exec.exec("sudo apt-get remove -qy lxd lxd-client");
                     yield exec.exec("sudo snap install core");
@@ -57,11 +60,8 @@ function run() {
                     yield exec.exec("sudo chmod a+wr /var/snap/lxd/common/lxd/unix.socket");
                     yield exec.exec("lxc network set lxdbr0 ipv6.address none");
                     yield exec.exec("sudo snap install juju --classic");
-                    yield exec.exec(`juju bootstrap localhost/localhost ${bootstrap_options}`);
                 }
-                if (provider === "aws") {
-                    yield exec.exec(`juju bootstrap aws/us-east-1 ${bootstrap_options}`);
-                }
+                yield exec.exec(`juju bootstrap --debug --verbose ${known_providers.get(provider)} ${bootstrap_options}`);
             }
             else {
                 core.setFailed(`Unknown provider: ${provider}`);
