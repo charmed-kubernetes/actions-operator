@@ -6,6 +6,8 @@ jobs:
     runs-on: ubuntu-latest
     name: Setup operator environment for LXD
     steps:
+      - name: Check out code
+        uses: actions/checkout@v2
       - uses: ./
         with:
           provider: lxd
@@ -20,6 +22,8 @@ jobs:
     runs-on: self-hosted
     name: Setup operator environment for AWS
     steps:
+      - name: Check out code
+        uses: actions/checkout@v2
       - uses: ./
         with:
           provider: aws
