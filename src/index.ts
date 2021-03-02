@@ -13,7 +13,6 @@ async function run() {
     let known_providers: string[] = ["aws", "azure", "google", "lxd"]
     const provider = core.getInput("provider");
     try {
-        console.log(provider)
         core.addPath('/snap/bin');
         await exec.exec("pip3 install tox");
         if(known_providers.indexOf(provider) >= 0) {
