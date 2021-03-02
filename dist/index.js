@@ -47,21 +47,19 @@ function run() {
         try {
             core.addPath('/snap/bin');
             yield exec.exec("pip3 install tox");
-            if (known_providers.includes(provider)) {
-                if (provider === "lxd") {
-                    yield exec.exec("sudo apt-get remove -qy lxd lxd-client");
-                    yield exec.exec("sudo snap install core");
-                    yield exec.exec("sudo snap install lxd");
-                    yield exec.exec("sudo lxd waitready");
-                    yield exec.exec("sudo lxd init --auto");
-                    yield exec.exec("sudo chmod a+wr /var/snap/lxd/common/lxd/unix.socket");
-                    yield exec.exec("lxc network set lxdbr0 ipv6.address none");
-                    yield exec.exec("sudo snap install juju --classic");
-                    yield exec.exec(`juju bootstrap localhost/localhost ${bootstrap_options}`);
-                }
-                if (provider === "aws") {
-                    yield exec.exec(`juju bootstrap aws/us-east-1 ${bootstrap_options}`);
-                }
+            if (provider === "lxd") {
+                yield exec.exec("sudo apt-get remove -qy lxd lxd-client");
+                yield exec.exec("sudo snap install core");
+                yield exec.exec("sudo snap install lxd");
+                yield exec.exec("sudo lxd waitready");
+                yield exec.exec("sudo lxd init --auto");
+                yield exec.exec("sudo chmod a+wr /var/snap/lxd/common/lxd/unix.socket");
+                yield exec.exec("lxc network set lxdbr0 ipv6.address none");
+                yield exec.exec("sudo snap install juju --classic");
+                yield exec.exec(`juju bootstrap localhost/localhost moo`);
+            }
+            else if (provider === "aws") {
+                yield exec.exec(`juju bootstrap aws/us-east-1 ${bootstrap_options}`);
             }
             else {
                 core.setFailed(`Unknown provider: ${provider}`);
