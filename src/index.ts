@@ -11,7 +11,7 @@ async function run() {
     const GITHUB_SHA = process.env["GITHUB_SHA"].slice(0, 5)
 
     var known_providers: string[] = ["aws", "azure", "google", "lxd"]
-    const provider = core.getInput("provider");
+    const provider = core.getInput("provider").trim();
     const bootstrap_options = `github-pr-${GITHUB_SHA} --model-default test-mode=true --model-default image-stream=daily --model-default automatically-retry-hooks=false --model-default logging-config="<root>=DEBUG"`
     try {
         core.addPath('/snap/bin');
