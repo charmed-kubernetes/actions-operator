@@ -2,13 +2,27 @@ name: Test Operator Setup
 on: [push]
 
 jobs:
-  test:
+  test-lxd:
     runs-on: ubuntu-latest
-    name: Setup operator environment
+    name: Setup operator environment for LXD
     steps:
       - uses: charmed-kubernetes/actions-operator@master
         with:
           provider: lxd
+
+      - name: Deploy ubuntu
+        run: |
+          juju deploy ubuntu
+          juju status
+          exit $?
+
+  test-aws:
+    runs-on: self-hosted
+    name: Setup operator environment for AWS
+    steps:
+      - uses: charmed-kubernetes/actions-operator@master
+        with:
+          provider: aws
 
       - name: Deploy ubuntu
         run: |

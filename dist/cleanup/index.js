@@ -3,7 +3,7 @@ module.exports =
 /******/ 	"use strict";
 /******/ 	var __webpack_modules__ = ({
 
-/***/ 822:
+/***/ 767:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
 
@@ -41,31 +41,10 @@ const exec = __importStar(__nccwpck_require__(514));
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
         const GITHUB_SHA = process.env["GITHUB_SHA"].slice(0, 5);
-        let known_providers = ["aws", "azure", "google", "lxd"];
         const provider = core.getInput("provider");
         try {
-            console.log(provider);
             core.addPath('/snap/bin');
-            yield exec.exec("pip3 install tox");
-            if (known_providers.indexOf(provider) >= 0) {
-                if (provider === "lxd") {
-                    yield exec.exec("sudo apt-get remove -qy lxd lxd-client");
-                    yield exec.exec("sudo snap install core");
-                    yield exec.exec("sudo snap install lxd");
-                    yield exec.exec("sudo lxd waitready");
-                    yield exec.exec("sudo lxd init --auto");
-                    yield exec.exec("sudo chmod a+wr /var/snap/lxd/common/lxd/unix.socket");
-                    yield exec.exec("lxc network set lxdbr0 ipv6.address none");
-                    yield exec.exec("sudo snap install juju --classic");
-                    yield exec.exec(`juju bootstrap localhost/localhost github-pr-${GITHUB_SHA}`);
-                }
-                if (provider === "aws") {
-                    yield exec.exec(`juju bootstrap aws/us-east-1 github-pr-${GITHUB_SHA} --model-default test-mode=true --model-default image-stream=daily --model-default automatically-retry-hooks=false --model-default logging-config="<root>=DEBUG"`);
-                }
-            }
-            else {
-                core.setFailed(`Unknown provider: ${provider}`);
-            }
+            yield exec.exec(`juju destroy-controller -y github-pr-${GITHUB_SHA} --destroy-all-models`);
         }
         catch (error) {
             core.setFailed(error.message);
@@ -1706,6 +1685,6 @@ module.exports = require("util");;
 /******/ 	// module exports must be returned from runtime so entry inlining is disabled
 /******/ 	// startup
 /******/ 	// Load entry module and return exports
-/******/ 	return __nccwpck_require__(822);
+/******/ 	return __nccwpck_require__(767);
 /******/ })()
 ;

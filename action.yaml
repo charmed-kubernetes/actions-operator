@@ -9,6 +9,7 @@ inputs:
 runs:
   using: "node12"
   main: "dist/index.js"
+  post: "dist/cleanup/index.js"
 branding:
   icon: "play"
   color: "blue"
