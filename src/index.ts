@@ -10,12 +10,13 @@ declare var process : {
 async function run() {
     const GITHUB_SHA = process.env["GITHUB_SHA"].slice(0, 5)
 
-    let known_providers: string[] = ["aws", "azure", "google", "lxd"]
+    var known_providers: string[] = ["aws", "azure", "google", "lxd"]
     const provider = core.getInput("provider");
+    const bootstrap_options = `github-pr-${GITHUB_SHA} --model-default test-mode=true --model-default image-stream=daily --model-default automatically-retry-hooks=false --model-default logging-config="<root>=DEBUG"`
     try {
         core.addPath('/snap/bin');
         await exec.exec("pip3 install tox");
-        if(known_providers.indexOf(provider) >= 0) {
+        if(known_providers.includes(provider)) {
             if (provider === "lxd") {
                 await exec.exec("sudo apt-get remove -qy lxd lxd-client");
                 await exec.exec("sudo snap install core");
@@ -25,14 +26,14 @@ async function run() {
                 await exec.exec("sudo chmod a+wr /var/snap/lxd/common/lxd/unix.socket");
                 await exec.exec("lxc network set lxdbr0 ipv6.address none");
                 await exec.exec("sudo snap install juju --classic");
-                await exec.exec(`juju bootstrap localhost/localhost github-pr-${GITHUB_SHA}`);
+                await exec.exec(`juju bootstrap localhost/localhost ${bootstrap_options}`);
             }
 
             if (provider === "aws") {
-                await exec.exec(`juju bootstrap aws/us-east-1 github-pr-${GITHUB_SHA} --model-default test-mode=true --model-default image-stream=daily --model-default automatically-retry-hooks=false --model-default logging-config="<root>=DEBUG"`);
+                await exec.exec(`juju bootstrap aws/us-east-1 ${bootstrap_options}`);
             }
         } else {
-                core.setFailed(`Unknown provider: ${provider}`);
+            core.setFailed(`Unknown provider: ${provider}`);
         }
     } catch(error) {
         core.setFailed(error.message);
