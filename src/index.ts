@@ -16,6 +16,13 @@ async function run() {
             await exec.exec("lxc network set lxdbr0 ipv6.address none");
             await exec.exec("sudo snap install juju --classic");
             await exec.exec("juju bootstrap localhost/localhost");
+	} else if (provider === "microk8s") { 
+	    await exec.exec("sudo snap install microk8s --classic")
+	    await exec.exec("sudo snap install juju --classic")
+	    await exec.exec('bash', ['-c', 'sudo usermod -a -G microk8s $USER'])
+	    await exec.exec('sg microk8s -c "microk8s status --wait-ready"')
+	    await exec.exec('sg microk8s -c "microk8s enable storage dns"')
+	    await exec.exec('sg microk8s -c "juju bootstrap microk8s micro"')
         } else {
             core.setFailed(`Unknown provider: ${provider}`);
         }
