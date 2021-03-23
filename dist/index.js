@@ -55,6 +55,14 @@ function run() {
                 yield exec.exec("sudo snap install juju --classic");
                 yield exec.exec("juju bootstrap localhost/localhost");
             }
+            else if (provider === "microk8s") {
+                yield exec.exec("sudo snap install microk8s --classic");
+                yield exec.exec("sudo snap install juju --classic");
+                yield exec.exec('bash', ['-c', 'sudo usermod -a -G microk8s $USER']);
+                yield exec.exec('sg microk8s -c "microk8s status --wait-ready"');
+                yield exec.exec('sg microk8s -c "microk8s enable storage dns"');
+                yield exec.exec('sg microk8s -c "juju bootstrap microk8s micro"');
+            }
             else {
                 core.setFailed(`Unknown provider: ${provider}`);
             }
