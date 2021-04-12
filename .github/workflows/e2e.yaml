@@ -5,7 +5,7 @@ on:
 jobs:
   test-lxd:
     runs-on: ubuntu-latest
-    name: Setup operator environment
+    name: Setup lxd environment
     steps:
       - uses: charmed-kubernetes/actions-operator@master
         with:
@@ -19,7 +19,7 @@ jobs:
 
   test-microk8s:
     runs-on: ubuntu-latest
-    name: Setup operator environment
+    name: Setup microk8s environment
     steps:
       - uses: charmed-kubernetes/actions-operator@master
         with:
