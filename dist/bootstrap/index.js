@@ -1591,7 +1591,7 @@ function run() {
         ]);
         const provider = core.getInput("provider");
         const bootstrap_options = `github-pr-${GITHUB_SHA} --bootstrap-constraints "cores=2 mem=4G" --model-default test-mode=true --model-default image-stream=daily --model-default automatically-retry-hooks=false --model-default logging-config="<root>=DEBUG"`;
-        if (known_providers.has(provider)) {
+        if (!known_providers.has(provider)) {
             core.setFailed(`Unknown provider: ${provider}`);
             return;
         }
