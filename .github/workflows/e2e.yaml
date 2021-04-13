@@ -23,7 +23,9 @@ jobs:
     runs-on: ubuntu-latest
     name: Test microk8s environment
     steps:
-      - uses: charmed-kubernetes/actions-operator@master
+      - name: Check out code
+        uses: actions/checkout@v2
+      - uses: ./
         with:
           provider: microk8s
 
