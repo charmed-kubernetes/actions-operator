@@ -33,40 +33,10 @@ const exec = __importStar(require("@actions/exec"));
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
         const GITHUB_SHA = process.env["GITHUB_SHA"].slice(0, 5);
-        let known_providers = new Map([
-            ["aws", "aws/us-east-1"],
-            ["lxd", "localhost/localhost"],
-            ["microk8s", "microk8s"]
-        ]);
         const provider = core.getInput("provider");
-        const bootstrap_options = `github-pr-${GITHUB_SHA} --bootstrap-constraints "cores=2 mem=4G" --model-default test-mode=true --model-default image-stream=daily --model-default automatically-retry-hooks=false --model-default logging-config="<root>=DEBUG"`;
-        if (known_providers.has(provider)) {
-            core.setFailed(`Unknown provider: ${provider}`);
-            return;
-        }
         try {
             core.addPath('/snap/bin');
-            yield exec.exec("pip3 install tox");
-            let bootstrap_command = `juju bootstrap --debug --verbose ${known_providers.get(provider)} ${bootstrap_options}`;
-            if (provider === "lxd") {
-                yield exec.exec("sudo apt-get remove -qy lxd lxd-client");
-                yield exec.exec("sudo snap install core");
-                yield exec.exec("sudo snap install lxd");
-                yield exec.exec("sudo lxd waitready");
-                yield exec.exec("sudo lxd init --auto");
-                yield exec.exec("sudo chmod a+wr /var/snap/lxd/common/lxd/unix.socket");
-                yield exec.exec("lxc network set lxdbr0 ipv6.address none");
-                yield exec.exec("sudo snap install juju --classic");
-            }
-            else if (provider === "microk8s") {
-                yield exec.exec("sudo snap install microk8s --classic");
-                yield exec.exec("sudo snap install juju --classic");
-                yield exec.exec('bash', ['-c', 'sudo usermod -a -G microk8s $USER']);
-                yield exec.exec('sg microk8s -c "microk8s status --wait-ready"');
-                yield exec.exec('sg microk8s -c "microk8s enable storage dns"');
-                bootstrap_command = `sg microk8s -c "${bootstrap_command}"`;
-            }
-            yield exec.exec(bootstrap_command);
+            yield exec.exec(`juju destroy-controller -y github-pr-${GITHUB_SHA} --destroy-all-models --destroy-storage`);
         }
         catch (error) {
             core.setFailed(error.message);
