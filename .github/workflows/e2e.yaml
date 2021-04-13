@@ -5,7 +5,7 @@ on:
 jobs:
   test-lxd:
     runs-on: ubuntu-latest
-    name: Setup lxd environment
+    name: Test lxd environment
     steps:
       - name: Check out code
         uses: actions/checkout@v2
@@ -21,7 +21,7 @@ jobs:
 
   test-microk8s:
     runs-on: ubuntu-latest
-    name: Setup microk8s environment
+    name: Test microk8s environment
     steps:
       - uses: charmed-kubernetes/actions-operator@master
         with:
@@ -35,7 +35,7 @@ jobs:
 
   test-aws:
     runs-on: self-hosted
-    name: Setup operator environment for AWS
+    name: Test AWS environment
     steps:
       - name: Check out code
         uses: actions/checkout@v2
