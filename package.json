@@ -4,14 +4,13 @@
   "description": "operator actions",
   "main": "lib/index.js",
   "scripts": {
-    "build": "tsc",
-    "dist": "ncc build lib/index.js -o dist && ncc build lib/cleanup.js -o dist/cleanup",
+    "build": "ncc build src/bootstrap/index.ts -o dist/bootstrap --license licenses.txt && ncc build src/cleanup/index.ts -o dist/cleanup --license licenses.txt",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "Adam Stokes <adam.stokes@canonical.com>",
   "license": "MIT",
   "dependencies": {
-    "@actions/core": "^1.2.6",
+    "@actions/core": "^1.2.7",
     "@actions/exec": "^1.0.4",
     "@actions/github": "^4.0.0"
   },
