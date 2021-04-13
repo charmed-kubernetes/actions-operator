@@ -1,10 +1,11 @@
 name: Test Operator Setup
-on: [push]
+on:
+- push
 
 jobs:
   test-lxd:
     runs-on: ubuntu-latest
-    name: Setup operator environment for LXD
+    name: Setup lxd environment
     steps:
       - name: Check out code
         uses: actions/checkout@v2
@@ -15,6 +16,20 @@ jobs:
       - name: Deploy ubuntu
         run: |
           juju deploy ubuntu
+          juju status
+          exit $?
+
+  test-microk8s:
+    runs-on: ubuntu-latest
+    name: Setup microk8s environment
+    steps:
+      - uses: charmed-kubernetes/actions-operator@master
+        with:
+          provider: microk8s
+
+      - name: Deploy minio
+        run: |
+          juju deploy cs:minio
           juju status
           exit $?
 
