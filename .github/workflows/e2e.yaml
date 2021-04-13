@@ -5,9 +5,11 @@ on:
 jobs:
   test-lxd:
     runs-on: ubuntu-latest
-    name: Setup lxd environment
+    name: Test lxd environment
     steps:
-      - uses: charmed-kubernetes/actions-operator@master
+      - name: Check out code
+        uses: actions/checkout@v2
+      - uses: ./
         with:
           provider: lxd
 
@@ -19,9 +21,11 @@ jobs:
 
   test-microk8s:
     runs-on: ubuntu-latest
-    name: Setup microk8s environment
+    name: Test microk8s environment
     steps:
-      - uses: charmed-kubernetes/actions-operator@master
+      - name: Check out code
+        uses: actions/checkout@v2
+      - uses: ./
         with:
           provider: microk8s
 
@@ -30,3 +34,19 @@ jobs:
           juju deploy cs:minio
           juju status
           exit $?
+
+  #test-aws:
+  #  runs-on: self-hosted
+  #  name: Test AWS environment
+  #  steps:
+  #    - name: Check out code
+  #      uses: actions/checkout@v2
+  #    - uses: ./
+  #      with:
+  #        provider: aws
+
+  #    - name: Deploy ubuntu
+  #      run: |
+  #        juju deploy ubuntu
+  #        juju status
+  #        exit $?

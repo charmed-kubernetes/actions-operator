@@ -4,19 +4,18 @@
   "description": "operator actions",
   "main": "lib/index.js",
   "scripts": {
-    "build": "tsc",
-    "dist": "ncc build lib/index.js --license licenses.txt",
+    "build": "ncc build src/bootstrap/index.ts -o dist/bootstrap --license licenses.txt && ncc build src/cleanup/index.ts -o dist/cleanup --license licenses.txt",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "Adam Stokes <adam.stokes@canonical.com>",
   "license": "MIT",
   "dependencies": {
-    "@actions/core": "^1.2.6",
+    "@actions/core": "^1.2.7",
     "@actions/exec": "^1.0.4",
     "@actions/github": "^4.0.0"
   },
   "devDependencies": {
     "@vercel/ncc": "^0.27.0",
-    "typescript": "^4.1.3"
+    "typescript": "^4.2.4"
   }
 }

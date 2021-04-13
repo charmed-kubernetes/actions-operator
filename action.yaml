@@ -8,7 +8,8 @@ inputs:
     default: "lxd"
 runs:
   using: "node12"
-  main: "dist/index.js"
+  main: "dist/bootstrap/index.js"
+  post: "dist/cleanup/index.js"
 branding:
   icon: "play"
   color: "blue"
