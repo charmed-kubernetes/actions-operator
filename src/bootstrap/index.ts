@@ -1,5 +1,6 @@
 import * as core from '@actions/core';
 import * as exec from '@actions/exec';
+import * as fs from '@actions/fs';
 
 declare var process : {
     env: {
@@ -34,12 +35,21 @@ async function run() {
             await exec.exec("sudo chmod a+wr /var/snap/lxd/common/lxd/unix.socket");
             await exec.exec("lxc network set lxdbr0 ipv6.address none");
             await exec.exec("sudo snap install juju --classic");
+
         } else if (provider === "microk8s") {
-            await exec.exec("sudo snap install microk8s --classic")
-            await exec.exec("sudo snap install juju --classic")
-            await exec.exec('bash', ['-c', 'sudo usermod -a -G microk8s $USER'])
-            await exec.exec('sg microk8s -c "microk8s status --wait-ready"')
-            await exec.exec('sg microk8s -c "microk8s enable storage dns"')
+            await exec.exec("sudo snap install microk8s --classic");
+            await exec.exec("sudo snap install juju --classic");
+            await exec.exec('bash', ['-c', 'sudo usermod -a -G microk8s $USER']);
+            await exec.exec('sg microk8s -c "microk8s status --wait-ready"');
+            await exec.exec('sg microk8s -c "microk8s enable storage dns"');
+            // Remove once this is fixed:
+            // https://github.com/actions/virtual-environments/issues/3185
+            await fs.appendFile('/var/snap/microk8s/current/args/kube-apiserver', '--kubelet-preferred-address-types="InternalIP,Hostname,InternalDNS,ExternalDNS,ExternalIP"');
+            await exec.exec("sudo snap restart microk8s.daemon-apiserver")
+            await exec.exec('sg microk8s -c "microk8s status --wait-ready"');
+            await exec.exec('sg microk8s -c "microk8s kubectl -nkube-system rollout status ds/calico-node"');
+            await exec.exec('sg microk8s -c "microk8s kubectl wait --for=condition=available -nkube-system deployment/coredns deployment/hostpath-provisioner"');
+
             bootstrap_command = `sg microk8s -c "${bootstrap_command}"`
         }
 
