@@ -1600,7 +1600,9 @@ function run() {
             yield exec.exec("pip3 install tox");
             let bootstrap_command = `juju bootstrap --debug --verbose ${known_providers.get(provider)} ${bootstrap_options}`;
             if (provider === "lxd") {
-                yield exec.exec("sudo apt-get remove -qy lxd lxd-client");
+                const options = {};
+                options.ignoreReturnCode = true;
+                yield exec.exec("sudo apt-get remove -qy lxd lxd-client", [], options);
                 yield exec.exec("sudo snap install core");
                 yield exec.exec("sudo snap install lxd");
                 yield exec.exec("sudo lxd waitready");
