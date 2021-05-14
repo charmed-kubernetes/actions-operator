@@ -1,14 +1,6 @@
 import * as core from '@actions/core';
 import * as exec from '@actions/exec';
 
-/*
-declare var process : {
-    env: {
-        [key: string]: string
-    }
-}
-*/
-
 async function run() {
     const GITHUB_SHA = process.env["GITHUB_SHA"]!.slice(0, 5)
 
@@ -49,10 +41,14 @@ async function run() {
         }
 
 	const bs_options: exec.ExecOptions = {}
-	bs_options.listeners = {stderr: (data: Buffer) => {
-	    // process.stdout.write(data)
-	    core.warning(data.join(' '))
-	}};
+	bs_options.listeners = {
+	    stderr: (data: Buffer) => {
+	    core.warning(data.toString())
+	},
+	    stdout: (data: Buffer) => {
+	    core.warning(data.toString())
+	},
+	};
 	core.startGroup('Bootstrapping')
         await exec.exec(bootstrap_command, [], bs_options)
 	core.endGroup()

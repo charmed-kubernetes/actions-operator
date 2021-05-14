@@ -1581,13 +1581,6 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 const core = __importStar(__nccwpck_require__(186));
 const exec = __importStar(__nccwpck_require__(514));
-/*
-declare var process : {
-    env: {
-        [key: string]: string
-    }
-}
-*/
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
         const GITHUB_SHA = process.env["GITHUB_SHA"].slice(0, 5);
@@ -1628,10 +1621,14 @@ function run() {
                 bootstrap_command = `sg microk8s -c "${bootstrap_command}"`;
             }
             const bs_options = {};
-            bs_options.listeners = { stderr: (data) => {
-                    // process.stdout.write(data)
-                    core.warning(data.join(' '));
-                } };
+            bs_options.listeners = {
+                stderr: (data) => {
+                    core.warning(data.toString());
+                },
+                stdout: (data) => {
+                    core.warning(data.toString());
+                },
+            };
             core.startGroup('Bootstrapping');
             yield exec.exec(bootstrap_command, [], bs_options);
             core.endGroup();
