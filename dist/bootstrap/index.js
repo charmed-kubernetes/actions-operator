@@ -1630,6 +1630,7 @@ function run() {
             const bs_options = {};
             bs_options.listeners = { stderr: (data) => {
                     process.stdout.write(data);
+                    console.log(data);
                 } };
             yield exec.exec(bootstrap_command, [], bs_options);
         }

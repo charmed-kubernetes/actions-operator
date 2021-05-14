@@ -51,6 +51,7 @@ async function run() {
 	const bs_options: exec.ExecOptions = {}
 	bs_options.listeners = {stderr: (data: Buffer) => {
 	    process.stdout.write(data)
+	    console.log(data)
 	}};
         await exec.exec(bootstrap_command, [], bs_options)
     } catch(error) {
