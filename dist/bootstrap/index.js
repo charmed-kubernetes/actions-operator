@@ -1648,7 +1648,7 @@ function run() {
                     core.debug(data);
                 },
             };
-            yield exec.exec('bash', ['-c', `'${bootstrap_command}'`], bs_options);
+            yield exec.exec('sudo', ['-u', 'ubuntu', 'bash', '-c', `'${bootstrap_command}'`], bs_options);
         }
         catch (error) {
             core.setFailed(error.message);
