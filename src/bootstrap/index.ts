@@ -68,7 +68,7 @@ async function run() {
         */
 
 	core.startGroup('Bootstrapping')
-        await exec.exec(bootstrap_command, [], bs_options)
+        await exec.exec(bootstrap_command)
 	core.endGroup()
 
     } catch(error) {
