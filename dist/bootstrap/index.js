@@ -1620,8 +1620,8 @@ function run() {
                 yield exec.exec('sg microk8s -c "microk8s enable storage dns"');
                 bootstrap_command = `sg microk8s -c "${bootstrap_command}"`;
             }
+            const bs_options = {};
             /*
-            const bs_options: exec.ExecOptions = {}
             bs_options.listeners = {
                 stderr: (data: Buffer) => {
                 core.warning(data.toString())
@@ -1634,7 +1634,21 @@ function run() {
                 await exec.exec(bootstrap_command, [], bs_options)
             core.endGroup()
                 */
-            yield exec.exec('bash', ['-c', `${bootstrap_command} 2>1`]);
+            bs_options.listeners = {
+                stderr: (data) => {
+                    core.warning(data.toString());
+                },
+                stdout: (data) => {
+                    core.warning(data.toString());
+                },
+                stdline: (data) => {
+                    core.warning(data);
+                },
+                errline: (data) => {
+                    core.warning(data);
+                },
+            };
+            yield exec.exec('bash', ['-c', `${bootstrap_command} 2>1`], bs_options);
         }
         catch (error) {
             core.setFailed(error.message);
