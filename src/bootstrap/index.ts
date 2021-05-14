@@ -50,10 +50,13 @@ async function run() {
 
 	const bs_options: exec.ExecOptions = {}
 	bs_options.listeners = {stderr: (data: Buffer) => {
-	    process.stdout.write(data)
-	    console.log(data)
+	    // process.stdout.write(data)
+	    core.warning(data.join(' '))
 	}};
+	core.startGroup('Bootstrapping')
         await exec.exec(bootstrap_command, [], bs_options)
+	core.endGroup()
+
     } catch(error) {
         core.setFailed(error.message);
     }

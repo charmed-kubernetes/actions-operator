@@ -1629,10 +1629,12 @@ function run() {
             }
             const bs_options = {};
             bs_options.listeners = { stderr: (data) => {
-                    process.stdout.write(data);
-                    console.log(data);
+                    // process.stdout.write(data)
+                    core.warning(data.join(' '));
                 } };
+            core.startGroup('Bootstrapping');
             yield exec.exec(bootstrap_command, [], bs_options);
+            core.endGroup();
         }
         catch (error) {
             core.setFailed(error.message);
