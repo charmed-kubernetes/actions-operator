@@ -1,14 +1,16 @@
 import * as core from '@actions/core';
 import * as exec from '@actions/exec';
 
-declare var process2 : {
+/*
+declare var process : {
     env: {
         [key: string]: string
     }
 }
+*/
 
 async function run() {
-    const GITHUB_SHA = process2.env["GITHUB_SHA"].slice(0, 5)
+    const GITHUB_SHA = process.env["GITHUB_SHA"]!.slice(0, 5)
 
     let known_providers = new Map([
         ["aws", "aws/us-east-1"],
