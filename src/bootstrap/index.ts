@@ -26,7 +26,9 @@ async function run() {
         await exec.exec("pip3 install tox");
         let bootstrap_command = `juju bootstrap --debug --verbose ${known_providers.get(provider)} ${bootstrap_options}`
         if (provider === "lxd") {
-            await exec.exec("sudo apt-get remove -qy lxd lxd-client");
+	    const options: exec.ExecOptions = {}
+	    options.ignoreReturnCode = true;
+            await exec.exec("sudo apt-get remove -qy lxd lxd-client", [], options);
             await exec.exec("sudo snap install core");
             await exec.exec("sudo snap install lxd");
             await exec.exec("sudo lxd waitready");
