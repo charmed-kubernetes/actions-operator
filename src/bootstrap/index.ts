@@ -40,18 +40,21 @@ async function run() {
             bootstrap_command = `sg microk8s -c "${bootstrap_command}"`
         }
 
+	/*
 	const bs_options: exec.ExecOptions = {}
 	bs_options.listeners = {
 	    stderr: (data: Buffer) => {
 	    core.warning(data.toString())
-	},
+	    },
 	    stdout: (data: Buffer) => {
 	    core.warning(data.toString())
-	},
+	    },
 	};
 	core.startGroup('Bootstrapping')
         await exec.exec(bootstrap_command, [], bs_options)
 	core.endGroup()
+        */
+        await exec.exec('bash', ['-c', `${bootstrap_command} 2>1`])
 
     } catch(error) {
         core.setFailed(error.message);
