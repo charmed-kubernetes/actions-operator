@@ -1647,6 +1647,7 @@ function run() {
             await exec.exec('sudo', ['-u', 'ubuntu', 'bash', '-c', `'${bootstrap_command}'`], bs_options)
                 */
             core.startGroup('Bootstrapping');
+            yield exec.exec('bash', ['-c', 'env']);
             yield exec.exec(bootstrap_command);
             core.endGroup();
         }
