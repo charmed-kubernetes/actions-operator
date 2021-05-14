@@ -1,14 +1,8 @@
 import * as core from '@actions/core';
 import * as exec from '@actions/exec';
 
-declare var process : {
-    env: {
-        [key: string]: string
-    }
-}
-
 async function run() {
-    const GITHUB_SHA = process.env["GITHUB_SHA"].slice(0, 5)
+    const GITHUB_SHA = process.env["GITHUB_SHA"]!.slice(0, 5)
     const provider = core.getInput("provider");
     try {
         core.addPath('/snap/bin');

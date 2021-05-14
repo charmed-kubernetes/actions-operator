@@ -56,19 +56,19 @@ async function run() {
         */
        	bs_options.listeners = {
 	    stderr: (data: Buffer) => {
-	    core.warning(data.toString())
+		core.debug(data.toString())
 	    },
 	    stdout: (data: Buffer) => {
-	    core.warning(data.toString())
+		core.debug(data.toString())
 	    },
 	    stdline: (data: string) => {
-		core.warning(data)
+		core.debug(data)
 	    },
 	    errline: (data: string) => {
-		core.warning(data)
+		core.debug(data)
 	    },
 	}; 
-	await exec.exec('bash', ['-c', `${bootstrap_command} 2>1`], bs_options)
+	await exec.exec('bash', ['-c', `${bootstrap_command} 2>&1`], bs_options)
 
     } catch(error) {
         core.setFailed(error.message);

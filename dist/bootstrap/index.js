@@ -1636,19 +1636,19 @@ function run() {
                 */
             bs_options.listeners = {
                 stderr: (data) => {
-                    core.warning(data.toString());
+                    core.debug(data.toString());
                 },
                 stdout: (data) => {
-                    core.warning(data.toString());
+                    core.debug(data.toString());
                 },
                 stdline: (data) => {
-                    core.warning(data);
+                    core.debug(data);
                 },
                 errline: (data) => {
-                    core.warning(data);
+                    core.debug(data);
                 },
             };
-            yield exec.exec('bash', ['-c', `${bootstrap_command} 2>1`], bs_options);
+            yield exec.exec('bash', ['-c', `${bootstrap_command} 2>&1`], bs_options);
         }
         catch (error) {
             core.setFailed(error.message);
