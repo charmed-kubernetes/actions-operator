@@ -18,8 +18,8 @@ async function run() {
     try {
         core.addPath('/snap/bin');
         await exec.exec("pip3 install tox");
-        let bootstrap_command = `juju bootstrap ${known_providers.get(provider)} ${bootstrap_options}`
-        // let bootstrap_command = `juju bootstrap --debug --verbose ${known_providers.get(provider)} ${bootstrap_options}`
+        //let bootstrap_command = `juju bootstrap --debug --verbose ${known_providers.get(provider)} ${bootstrap_options}`
+        let bootstrap_command = `juju bootstrap --debug --verbose ${known_providers.get(provider)} ${bootstrap_options}`
         if (provider === "lxd") {
 	    const options: exec.ExecOptions = {}
 	    options.ignoreReturnCode = true;
@@ -41,15 +41,12 @@ async function run() {
         }
 
 	const bs_options: exec.ExecOptions = {}
-	/*
 	bs_options.listeners = {
 	    stderr: (data: Buffer) => {
 	    core.warning(data.toString())
 	    },
-	    stdout: (data: Buffer) => {
-	    core.warning(data.toString())
-	    },
 	};
+	/*
 	core.startGroup('Bootstrapping')
         await exec.exec(bootstrap_command, [], bs_options)
 	core.endGroup()
@@ -70,7 +67,9 @@ async function run() {
 	await exec.exec('sudo', ['-u', 'ubuntu', 'bash', '-c', `'${bootstrap_command}'`], bs_options)
         */
 
-        await exec.exec(bootstrap_command)
+	core.startGroup('Bootstrapping')
+        await exec.exec(bootstrap_command, [], bs_options)
+	core.endGroup()
 
     } catch(error) {
         core.setFailed(error.message);

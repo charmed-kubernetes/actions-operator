@@ -1598,8 +1598,8 @@ function run() {
         try {
             core.addPath('/snap/bin');
             yield exec.exec("pip3 install tox");
-            let bootstrap_command = `juju bootstrap ${known_providers.get(provider)} ${bootstrap_options}`;
-            // let bootstrap_command = `juju bootstrap --debug --verbose ${known_providers.get(provider)} ${bootstrap_options}`
+            //let bootstrap_command = `juju bootstrap --debug --verbose ${known_providers.get(provider)} ${bootstrap_options}`
+            let bootstrap_command = `juju bootstrap --debug --verbose ${known_providers.get(provider)} ${bootstrap_options}`;
             if (provider === "lxd") {
                 const options = {};
                 options.ignoreReturnCode = true;
@@ -1621,15 +1621,12 @@ function run() {
                 bootstrap_command = `sg microk8s -c "${bootstrap_command}"`;
             }
             const bs_options = {};
-            /*
             bs_options.listeners = {
-                stderr: (data: Buffer) => {
-                core.warning(data.toString())
-                },
-                stdout: (data: Buffer) => {
-                core.warning(data.toString())
+                stderr: (data) => {
+                    core.warning(data.toString());
                 },
             };
+            /*
             core.startGroup('Bootstrapping')
                 await exec.exec(bootstrap_command, [], bs_options)
             core.endGroup()
@@ -1649,7 +1646,9 @@ function run() {
             };
             await exec.exec('sudo', ['-u', 'ubuntu', 'bash', '-c', `'${bootstrap_command}'`], bs_options)
                 */
-            yield exec.exec(bootstrap_command);
+            core.startGroup('Bootstrapping');
+            yield exec.exec(bootstrap_command, [], bs_options);
+            core.endGroup();
         }
         catch (error) {
             core.setFailed(error.message);
