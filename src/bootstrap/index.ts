@@ -68,7 +68,7 @@ async function run() {
 		core.debug(data)
 	    },
 	}; 
-	await exec.exec('bash', ['-c', `${bootstrap_command} 2>&1`], bs_options)
+	await exec.exec('bash', ['-c', `'${bootstrap_command} 2>&1'`], bs_options)
 
     } catch(error) {
         core.setFailed(error.message);
