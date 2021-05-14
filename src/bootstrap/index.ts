@@ -10,7 +10,6 @@ async function run() {
         ["microk8s", "microk8s"]
     ])
     const provider = core.getInput("provider");
-    // const bootstrap_options = `github-pr-${GITHUB_SHA} --model-default test-mode=true --model-default image-stream=daily --model-default automatically-retry-hooks=false`
     const bootstrap_options = `github-pr-${GITHUB_SHA} --bootstrap-constraints "cores=2 mem=4G" --model-default test-mode=true --model-default image-stream=daily --model-default automatically-retry-hooks=false --model-default logging-config="<root>=DEBUG"`
     if(!known_providers.has(provider)) {
         core.setFailed(`Unknown provider: ${provider}`);
@@ -19,7 +18,7 @@ async function run() {
     try {
         core.addPath('/snap/bin');
         await exec.exec("pip3 install tox");
-        let bootstrap_command = `juju bootstrap --debug --verbose ${known_providers.get(provider)} ${bootstrap_options}`
+        let bootstrap_command = `/snap/bin/juju bootstrap --debug --verbose ${known_providers.get(provider)} ${bootstrap_options}`
         if (provider === "lxd") {
 	    const options: exec.ExecOptions = {}
 	    options.ignoreReturnCode = true;
