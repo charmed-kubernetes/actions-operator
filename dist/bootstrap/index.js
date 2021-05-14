@@ -1598,7 +1598,8 @@ function run() {
         try {
             core.addPath('/snap/bin');
             yield exec.exec("pip3 install tox");
-            let bootstrap_command = `/snap/bin/juju bootstrap --debug --verbose ${known_providers.get(provider)} ${bootstrap_options}`;
+            let bootstrap_command = `juju bootstrap ${known_providers.get(provider)} ${bootstrap_options}`;
+            // let bootstrap_command = `juju bootstrap --debug --verbose ${known_providers.get(provider)} ${bootstrap_options}`
             if (provider === "lxd") {
                 const options = {};
                 options.ignoreReturnCode = true;
@@ -1632,22 +1633,23 @@ function run() {
             core.startGroup('Bootstrapping')
                 await exec.exec(bootstrap_command, [], bs_options)
             core.endGroup()
-                */
-            bs_options.listeners = {
-                stderr: (data) => {
-                    core.debug(data.toString());
+                bs_options.listeners = {
+                stderr: (data: Buffer) => {
+                core.debug(data.toString())
                 },
-                stdout: (data) => {
-                    core.debug(data.toString());
+                stdout: (data: Buffer) => {
+                core.debug(data.toString())
                 },
-                stdline: (data) => {
-                    core.debug(data);
+                stdline: (data: string) => {
+                core.debug(data)
                 },
-                errline: (data) => {
-                    core.debug(data);
+                errline: (data: string) => {
+                core.debug(data)
                 },
             };
-            yield exec.exec('sudo', ['-u', 'ubuntu', 'bash', '-c', `'${bootstrap_command}'`], bs_options);
+            await exec.exec('sudo', ['-u', 'ubuntu', 'bash', '-c', `'${bootstrap_command}'`], bs_options)
+                */
+            yield exec.exec(bootstrap_command);
         }
         catch (error) {
             core.setFailed(error.message);
