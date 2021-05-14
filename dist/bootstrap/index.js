@@ -1624,7 +1624,7 @@ function run() {
             bs_options.listeners = { stderr: (data) => {
                     process.stdout.write(data);
                 } };
-            yield exec.exec(bootstrap_command);
+            yield exec.exec(bootstrap_command, [], bs_options);
         }
         catch (error) {
             core.setFailed(error.message);

@@ -50,7 +50,7 @@ async function run() {
 	bs_options.listeners = {stderr: (data: Buffer) => {
 	    process.stdout.write(data)
 	}};
-        await exec.exec(bootstrap_command)
+        await exec.exec(bootstrap_command, [], bs_options)
     } catch(error) {
         core.setFailed(error.message);
     }
