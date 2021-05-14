@@ -1648,6 +1648,8 @@ function run() {
                 */
             core.startGroup('Bootstrapping');
             yield exec.exec('bash', ['-c', 'env']);
+            yield exec.exec('bash', ['-c', 'hostname']);
+            yield exec.exec('bash', ['-c', 'juju --help']);
             yield exec.exec('juju --help');
             yield exec.exec(bootstrap_command);
             core.endGroup();

@@ -69,6 +69,8 @@ async function run() {
 
 	core.startGroup('Bootstrapping')
         await exec.exec('bash', ['-c', 'env'])
+        await exec.exec('bash', ['-c', 'hostname'])
+        await exec.exec('bash', ['-c', 'juju --help'])
         await exec.exec('juju --help')
         await exec.exec(bootstrap_command)
 	core.endGroup()
