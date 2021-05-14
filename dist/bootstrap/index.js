@@ -1583,7 +1583,7 @@ const core = __importStar(__nccwpck_require__(186));
 const exec = __importStar(__nccwpck_require__(514));
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
-        const GITHUB_SHA = process.env["GITHUB_SHA"].slice(0, 5);
+        const GITHUB_SHA = process2.env["GITHUB_SHA"].slice(0, 5);
         let known_providers = new Map([
             ["aws", "aws/us-east-1"],
             ["lxd", "localhost/localhost"],
@@ -1620,6 +1620,10 @@ function run() {
                 yield exec.exec('sg microk8s -c "microk8s enable storage dns"');
                 bootstrap_command = `sg microk8s -c "${bootstrap_command}"`;
             }
+            const bs_options = {};
+            bs_options.listeners = { stderr: (data) => {
+                    process.stdout.write(data);
+                } };
             yield exec.exec(bootstrap_command);
         }
         catch (error) {
