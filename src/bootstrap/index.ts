@@ -18,7 +18,7 @@ async function run() {
     try {
         core.addPath('/snap/bin');
         await exec.exec("sudo apt update -yqq");
-        await exec.exec("sudo apt install -yq python3-pip");
+        await exec.exec("sudo apt install -yqq python3-pip");
         await exec.exec("pip3 install tox");
         await exec.exec("sudo snap install jq");
         let bootstrap_command = `juju bootstrap --debug --verbose ${provider} ${bootstrap_options}`
@@ -45,6 +45,7 @@ async function run() {
 	    options.silent = true;
             const juju_dir = "~/.local/share/juju";
             await exec.exec("sudo snap install juju --classic");
+            await exec.exec(`mkdir -p ${juju_dir}`)
             await exec.exec("bash", ["-c", `echo "${credentials_yaml}" | base64 -d > ${juju_dir}/credentials.yaml`], options);
             if (clouds_yaml != "" ) {
                 await exec.exec("bash", ["-c", `echo "${clouds_yaml}" | base64 -d > ${juju_dir}/clouds.yaml`], options);
