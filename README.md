@@ -17,7 +17,10 @@ This will give your job an environment with the following:
   * Juju installed
   * A LXD (default) controller bootstrapped
 
-You can instead get a Microk8s controller, or even a custom cloud:
+In addition to LXD, the action also supports Microk8s out-of-the-box. You can
+also use any other provider by passing in a `credentials.yaml` file (for public
+clouds) or both `credentials.yaml` and `clouds.yaml` files (for custom clouds),
+using GitHub Secrets. For example:
 
 ```yaml
 jobs:
