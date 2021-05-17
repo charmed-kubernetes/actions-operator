@@ -35,16 +35,18 @@ jobs:
           juju status
           exit $?
 
-  test-aws:
+  test-vSphere:
     runs-on: self-hosted
-    name: Test AWS environment
+    environment: vsphere
+    name: Test vSphere environment
     steps:
       - name: Check out code
         uses: actions/checkout@v2
       - uses: ./
         with:
-          provider: aws
+          provider: vsphere
           credentials-yaml: ${{ secrets.CREDENTIALS_YAML }}
+          clouds-yaml: ${{ secrets.CLOUDS_YAML }}
 
       - name: Deploy ubuntu
         run: |
