@@ -8,6 +8,7 @@ declare var process : {
 }
 
 async function run() {
+    const HOME = process.env["HOME"]
     const GITHUB_SHA = process.env["GITHUB_SHA"].slice(0, 5)
 
     const provider = core.getInput("provider");
@@ -45,14 +46,9 @@ async function run() {
         } else if (credentials_yaml != "") {
 	    const options: exec.ExecOptions = {}
 	    options.silent = true;
-            const juju_dir = "$HOME/.local/share/juju";
+            const juju_dir = `${HOME}/.local/share/juju`;
             await exec.exec("sudo snap install juju --classic");
             await exec.exec(`mkdir -p ${juju_dir}`)
-            await exec.exec(`ls -ld $HOME/.local`)
-            await exec.exec(`ls -ld $HOME/.local/share`)
-            await exec.exec(`ls -ld ${juju_dir}`)
-            await exec.exec("bash", ["-c", `ls -ld ${juju_dir}`])
-            await exec.exec("bash", ["-c", `(echo "test" | base64 -d) > ${juju_dir}/credentials.yaml`]);
             await exec.exec("bash", ["-c", `echo "${credentials_yaml}" | base64 -d > ${juju_dir}/credentials.yaml`], options);
             if (clouds_yaml != "" ) {
                 await exec.exec("bash", ["-c", `echo "${clouds_yaml}" | base64 -d > ${juju_dir}/clouds.yaml`], options);
