@@ -1591,6 +1591,7 @@ function run() {
         const bootstrap_options = `${controller_name} --bootstrap-constraints "cores=2 mem=4G" --model-default test-mode=true --model-default image-stream=daily --model-default automatically-retry-hooks=false --model-default logging-config="<root>=DEBUG"`;
         try {
             core.addPath('/snap/bin');
+            yield exec.exec("sudo apt update -yqq");
             yield exec.exec("sudo apt install -yq python3-pip");
             yield exec.exec("pip3 install tox");
             yield exec.exec("sudo snap install jq");

@@ -37,7 +37,6 @@ jobs:
 
   test-vSphere:
     runs-on: self-hosted
-    environment: vsphere
     name: Test vSphere environment
     steps:
       - name: Check out code
