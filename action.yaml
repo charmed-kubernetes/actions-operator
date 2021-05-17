@@ -3,9 +3,19 @@ description: "Setup a operator environment"
 author: "Adam Stokes"
 inputs:
   provider:
-    description: "Which Juju provider to use"
+    description: |
+      Which Juju provider to use. Can be "lxd" or "microk8s", or a cloud
+      added via the credentials-yaml and clouds-yaml inputs.
     required: false
     default: "lxd"
+  credentials-yaml:
+    description: "A base64-encoded credentials.yaml file to use."
+    required: false
+    default: ""
+  clouds-yaml:
+    description: "A base64-encoded clouds.yaml file to use."
+    required: false
+    default: ""
 runs:
   using: "node12"
   main: "dist/bootstrap/index.js"
