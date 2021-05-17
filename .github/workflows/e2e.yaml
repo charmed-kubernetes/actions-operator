@@ -36,7 +36,6 @@ jobs:
           exit $?
 
   test-aws:
-    if: ${{ secrets.CREDENTIALS_YAML }}
     runs-on: self-hosted
     name: Test AWS environment
     steps:
