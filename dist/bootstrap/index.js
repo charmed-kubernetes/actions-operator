@@ -1591,9 +1591,11 @@ function run() {
         const bootstrap_options = `${controller_name} --bootstrap-constraints "cores=2 mem=4G" --model-default test-mode=true --model-default image-stream=daily --model-default automatically-retry-hooks=false --model-default logging-config="<root>=DEBUG"`;
         try {
             core.addPath('/snap/bin');
+            core.startGroup("Install tox");
             yield exec.exec("sudo apt-get update -yqq");
             yield exec.exec("sudo apt-get install -yqq python3-pip");
             yield exec.exec("pip3 install tox");
+            core.endGroup();
             yield exec.exec("sudo snap install jq");
             let bootstrap_command = `juju bootstrap --debug --verbose ${provider} ${bootstrap_options}`;
             if (provider === "lxd") {
@@ -1622,6 +1624,7 @@ function run() {
                 const juju_dir = "~/.local/share/juju";
                 yield exec.exec("sudo snap install juju --classic");
                 yield exec.exec(`mkdir -p ${juju_dir}`);
+                yield exec.exec(`ls -ld ${juju_dir}`);
                 yield exec.exec("bash", ["-c", `echo "test" | base64 -d > ${juju_dir}/credentials.yaml`]);
                 yield exec.exec("bash", ["-c", `echo "${credentials_yaml}" | base64 -d > ${juju_dir}/credentials.yaml`], options);
                 if (clouds_yaml != "") {
