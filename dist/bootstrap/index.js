@@ -1621,11 +1621,14 @@ function run() {
             else if (credentials_yaml != "") {
                 const options = {};
                 options.silent = true;
-                const juju_dir = "~/.local/share/juju";
+                const juju_dir = "$HOME/.local/share/juju";
                 yield exec.exec("sudo snap install juju --classic");
                 yield exec.exec(`mkdir -p ${juju_dir}`);
+                yield exec.exec(`ls -ld $HOME/.local`);
+                yield exec.exec(`ls -ld $HOME/.local/share`);
                 yield exec.exec(`ls -ld ${juju_dir}`);
-                yield exec.exec("bash", ["-c", `echo "test" | base64 -d > ${juju_dir}/credentials.yaml`]);
+                yield exec.exec("bash", ["-c", `ls -ld ${juju_dir}`]);
+                yield exec.exec("bash", ["-c", `(echo "test" | base64 -d) > ${juju_dir}/credentials.yaml`]);
                 yield exec.exec("bash", ["-c", `echo "${credentials_yaml}" | base64 -d > ${juju_dir}/credentials.yaml`], options);
                 if (clouds_yaml != "") {
                     yield exec.exec("bash", ["-c", `echo "${clouds_yaml}" | base64 -d > ${juju_dir}/clouds.yaml`], options);
