@@ -1583,11 +1583,12 @@ const core = __importStar(__nccwpck_require__(186));
 const exec = __importStar(__nccwpck_require__(514));
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
-        const GITHUB_SHA = process.env["GITHUB_SHA"].slice(0, 5);
-        const provider = core.getInput("provider");
+        const controller_name = process.env["CONTROLLER_NAME"];
         try {
-            core.addPath('/snap/bin');
-            yield exec.exec(`juju destroy-controller -y github-pr-${GITHUB_SHA} --destroy-all-models --destroy-storage`);
+            if (controller_name) {
+                core.addPath('/snap/bin');
+                yield exec.exec(`juju destroy-controller -y ${controller_name} --destroy-all-models --destroy-storage`);
+            }
         }
         catch (error) {
             core.setFailed(error.message);
