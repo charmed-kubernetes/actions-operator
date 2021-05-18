@@ -35,18 +35,21 @@ jobs:
           juju status
           exit $?
 
-  #test-aws:
-  #  runs-on: self-hosted
-  #  name: Test AWS environment
-  #  steps:
-  #    - name: Check out code
-  #      uses: actions/checkout@v2
-  #    - uses: ./
-  #      with:
-  #        provider: aws
+  test-vSphere:
+    runs-on: self-hosted
+    name: Test vSphere environment
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v2
+      - uses: ./
+        with:
+          provider: vsphere
+          credentials-yaml: ${{ secrets.CREDENTIALS_YAML }}
+          clouds-yaml: ${{ secrets.CLOUDS_YAML }}
+          bootstrap-options: "--model-default datastore=vsanDatastore --model-default primary-network=VLAN_2764"
 
-  #    - name: Deploy ubuntu
-  #      run: |
-  #        juju deploy ubuntu
-  #        juju status
-  #        exit $?
+      - name: Deploy ubuntu
+        run: |
+          juju deploy ubuntu
+          juju status
+          exit $?

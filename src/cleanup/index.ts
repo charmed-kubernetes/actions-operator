@@ -8,11 +8,12 @@ declare var process : {
 }
 
 async function run() {
-    const GITHUB_SHA = process.env["GITHUB_SHA"].slice(0, 5)
-    const provider = core.getInput("provider");
+    const controller_name = process.env["CONTROLLER_NAME"];
     try {
-        core.addPath('/snap/bin');
-        await exec.exec(`juju destroy-controller -y github-pr-${GITHUB_SHA} --destroy-all-models --destroy-storage`)
+        if (controller_name) {
+            core.addPath('/snap/bin');
+            await exec.exec(`juju destroy-controller -y ${controller_name} --destroy-all-models --destroy-storage`)
+        }
     } catch(error) {
         core.setFailed(error.message);
     }

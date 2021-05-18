@@ -1583,22 +1583,23 @@ const core = __importStar(__nccwpck_require__(186));
 const exec = __importStar(__nccwpck_require__(514));
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
+        const HOME = process.env["HOME"];
         const GITHUB_SHA = process.env["GITHUB_SHA"].slice(0, 5);
-        let known_providers = new Map([
-            ["aws", "aws/us-east-1"],
-            ["lxd", "localhost/localhost"],
-            ["microk8s", "microk8s"]
-        ]);
         const provider = core.getInput("provider");
-        const bootstrap_options = `github-pr-${GITHUB_SHA} --bootstrap-constraints "cores=2 mem=4G" --model-default test-mode=true --model-default image-stream=daily --model-default automatically-retry-hooks=false --model-default logging-config="<root>=DEBUG"`;
-        if (!known_providers.has(provider)) {
-            core.setFailed(`Unknown provider: ${provider}`);
-            return;
-        }
+        const credentials_yaml = core.getInput("credentials-yaml");
+        const clouds_yaml = core.getInput("clouds-yaml");
+        const extra_bootstrap_options = core.getInput("bootstrap-options");
+        const controller_name = `github-pr-${GITHUB_SHA}`;
+        const bootstrap_options = `${controller_name} --bootstrap-constraints "cores=2 mem=4G" --model-default test-mode=true --model-default image-stream=daily --model-default automatically-retry-hooks=false --model-default logging-config="<root>=DEBUG" ${extra_bootstrap_options}`;
         try {
             core.addPath('/snap/bin');
+            core.startGroup("Install tox");
+            yield exec.exec("sudo apt-get update -yqq");
+            yield exec.exec("sudo apt-get install -yqq python3-pip");
             yield exec.exec("pip3 install tox");
-            let bootstrap_command = `juju bootstrap --debug --verbose ${known_providers.get(provider)} ${bootstrap_options}`;
+            core.endGroup();
+            yield exec.exec("sudo snap install jq");
+            let bootstrap_command = `juju bootstrap --debug --verbose ${provider} ${bootstrap_options}`;
             if (provider === "lxd") {
                 const options = {};
                 options.ignoreReturnCode = true;
@@ -1619,7 +1620,23 @@ function run() {
                 yield exec.exec('sg microk8s -c "microk8s enable storage dns"');
                 bootstrap_command = `sg microk8s -c "${bootstrap_command}"`;
             }
+            else if (credentials_yaml != "") {
+                const options = {};
+                options.silent = true;
+                const juju_dir = `${HOME}/.local/share/juju`;
+                yield exec.exec("sudo snap install juju --classic");
+                yield exec.exec(`mkdir -p ${juju_dir}`);
+                yield exec.exec("bash", ["-c", `echo "${credentials_yaml}" | base64 -d > ${juju_dir}/credentials.yaml`], options);
+                if (clouds_yaml != "") {
+                    yield exec.exec("bash", ["-c", `echo "${clouds_yaml}" | base64 -d > ${juju_dir}/clouds.yaml`], options);
+                }
+            }
+            else {
+                core.setFailed(`Custom provider set without credentials: ${provider}`);
+                return;
+            }
             yield exec.exec(bootstrap_command);
+            core.exportVariable('CONTROLLER_NAME', controller_name);
         }
         catch (error) {
             core.setFailed(error.message);
