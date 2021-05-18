@@ -20,7 +20,8 @@ This will give your job an environment with the following:
 In addition to LXD, the action also supports Microk8s out-of-the-box. You can
 also use any other provider by passing in a `credentials.yaml` file (for public
 clouds) or both `credentials.yaml` and `clouds.yaml` files (for custom clouds),
-using GitHub Secrets. For example:
+using GitHub Secrets. If your custom cloud requires additional bootstrap config,
+you can provide that as well. For example:
 
 ```yaml
 jobs:
@@ -41,7 +42,7 @@ jobs:
         uses: charmed-kubernetes/actions-operator@master
         with:
           provider: aws
-          credentials_yaml: ${{ secrets.CREDENTIALS_YAML }}
+          credentials-yaml: ${{ secrets.CREDENTIALS_YAML }}
 
   test-on-maas:
     runs-on: ubuntu-latest
@@ -51,8 +52,9 @@ jobs:
         uses: charmed-kubernetes/actions-operator@master
         with:
           provider: maas
-          credentials_yaml: ${{ secrets.CREDENTIALS_YAML }}
-          clouds_yaml: ${{ secrets.CLOUDS_YAML }}
+          credentials-yaml: ${{ secrets.CREDENTIALS_YAML }}
+          clouds-yaml: ${{ secrets.CLOUDS_YAML }}
+          bootstrap-options: "--model-default datastore=my-datastore"
 ```
 
 ## pytest-operator

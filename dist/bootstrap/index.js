@@ -1588,8 +1588,9 @@ function run() {
         const provider = core.getInput("provider");
         const credentials_yaml = core.getInput("credentials-yaml");
         const clouds_yaml = core.getInput("clouds-yaml");
+        const extra_bootstrap_options = core.getInput("bootstrap-options");
         const controller_name = `github-pr-${GITHUB_SHA}`;
-        const bootstrap_options = `${controller_name} --bootstrap-constraints "cores=2 mem=4G" --model-default test-mode=true --model-default image-stream=daily --model-default automatically-retry-hooks=false --model-default logging-config="<root>=DEBUG"`;
+        const bootstrap_options = `${controller_name} --bootstrap-constraints "cores=2 mem=4G" --model-default test-mode=true --model-default image-stream=daily --model-default automatically-retry-hooks=false --model-default logging-config="<root>=DEBUG" ${extra_bootstrap_options}`;
         try {
             core.addPath('/snap/bin');
             core.startGroup("Install tox");
