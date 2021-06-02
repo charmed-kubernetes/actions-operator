@@ -66,7 +66,7 @@ async function run() {
         // (Also, self-hosted runners might not have /etc/gitconfig, so this has to ignore errors.)
         const options: exec.ExecOptions = {}
         options.ignoreReturnCode = true;
-        await exec.exec("cat /etc/gitconfig >> $HOME/.gitconfig", [], options);
+        await exec.exec("bash", ["-c", `cat /etc/gitconfig >> ${HOME}/.gitconfig`], options);
         await exec.exec("sudo rm /etc/gitconfig", [], options);
 
         await exec.exec(bootstrap_command);

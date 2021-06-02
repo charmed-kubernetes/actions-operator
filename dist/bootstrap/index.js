@@ -1641,7 +1641,7 @@ function run() {
             // (Also, self-hosted runners might not have /etc/gitconfig, so this has to ignore errors.)
             const options = {};
             options.ignoreReturnCode = true;
-            yield exec.exec("cat /etc/gitconfig >> $HOME/.gitconfig", [], options);
+            yield exec.exec("bash", ["-c", `cat /etc/gitconfig >> ${HOME}/.gitconfig`], options);
             yield exec.exec("sudo rm /etc/gitconfig", [], options);
             yield exec.exec(bootstrap_command);
             core.exportVariable('CONTROLLER_NAME', controller_name);
