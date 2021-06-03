@@ -59,6 +59,16 @@ async function run() {
             return
         }
 
+        await exec.exec("sudo snap install charm --classic");
+        await exec.exec("sudo snap install charmcraft");
+
+        // Workaround for strictly confined charmcraft not being able to access /etc/gitconfig.
+        // (Also, self-hosted runners might not have /etc/gitconfig, so this has to ignore errors.)
+        const options: exec.ExecOptions = {}
+        options.ignoreReturnCode = true;
+        await exec.exec("bash", ["-c", `cat /etc/gitconfig >> ${HOME}/.gitconfig`], options);
+        await exec.exec("sudo rm /etc/gitconfig", [], options);
+
         await exec.exec(bootstrap_command);
         core.exportVariable('CONTROLLER_NAME', controller_name);
     } catch(error) {
