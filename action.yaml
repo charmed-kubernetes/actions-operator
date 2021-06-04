@@ -4,8 +4,8 @@ author: "Adam Stokes"
 inputs:
   provider:
     description: |
-      Which Juju provider to use. Can be "lxd" or "microk8s", or a cloud
-      added via the credentials-yaml and clouds-yaml inputs.
+      Which Juju provider to use. Can be "lxd", "microk8s" or "microstack",
+      or a cloud added via the credentials-yaml and clouds-yaml inputs.
     required: false
     default: "lxd"
   credentials-yaml:
