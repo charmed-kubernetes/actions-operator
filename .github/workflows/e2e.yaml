@@ -35,6 +35,22 @@ jobs:
           juju status
           exit $?
 
+  test-microstack:
+    runs-on: self-hosted
+    name: Test microstack environment
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v2
+      - uses: ./
+        with:
+          provider: microstack
+
+      - name: Deploy Ubuntu
+        run: |
+          juju deploy cs:ubuntu
+          juju status
+          exit $?
+
   test-vSphere:
     runs-on: self-hosted
     name: Test vSphere environment

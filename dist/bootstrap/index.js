@@ -1598,6 +1598,9 @@ function run() {
             yield exec.exec("sudo apt-get install -yqq python3-pip");
             yield exec.exec("pip3 install tox");
             core.endGroup();
+            core.startGroup("Install Juju");
+            yield exec.exec("sudo snap install juju --classic");
+            core.endGroup();
             yield exec.exec("sudo snap install jq");
             let bootstrap_command = `juju bootstrap --debug --verbose ${provider} ${bootstrap_options}`;
             if (provider === "lxd") {
@@ -1610,21 +1613,42 @@ function run() {
                 yield exec.exec("sudo lxd init --auto");
                 yield exec.exec("sudo chmod a+wr /var/snap/lxd/common/lxd/unix.socket");
                 yield exec.exec("lxc network set lxdbr0 ipv6.address none");
-                yield exec.exec("sudo snap install juju --classic");
             }
             else if (provider === "microk8s") {
                 yield exec.exec("sudo snap install microk8s --classic");
-                yield exec.exec("sudo snap install juju --classic");
                 yield exec.exec('bash', ['-c', 'sudo usermod -a -G microk8s $USER']);
                 yield exec.exec('sg microk8s -c "microk8s status --wait-ready"');
                 yield exec.exec('sg microk8s -c "microk8s enable storage dns"');
                 bootstrap_command = `sg microk8s -c "${bootstrap_command}"`;
             }
+            else if (provider === "microstack") {
+                core.startGroup("Install Microstack");
+                let os_series = "focal";
+                let os_region = "microstack";
+                yield exec.exec("sudo snap install microstack --beta --devmode");
+                yield exec.exec("sudo snap alias microstack.openstack openstack");
+                core.endGroup();
+                core.startGroup("Initial Microstack");
+                yield exec.exec("sudo microstack init --auto --control");
+                // note (rgildein): enable ipv4 ip forwarding is necessary for machine to have internet access
+                //                  https://bugs.launchpad.net/microstack/+bug/1812415
+                yield exec.exec("sudo sysctl net.ipv4.ip_forward=1");
+                yield exec.exec("bash", ["-c", `curl http://cloud-images.ubuntu.com/${os_series}/current/${os_series}-server-cloudimg-amd64.img | openstack image create --public --container-format=bare --disk-format=qcow2 ${os_series}`]);
+                yield exec.exec("mkdir -p /tmp/simplestreams");
+                yield exec.exec("bash", ["-c", `juju metadata generate-image -d /tmp/simplestreams -s ${os_series} -i "$(openstack image show ${os_series} -f value -c id)" -r ${os_region} -u http://10.20.20.1:5000/v3`]);
+                yield exec.exec("bash", ["-c", "echo '{clouds: {microstack: {type: openstack, auth-types: [access-key,userpass], regions: {microstack: {endpoint: http://10.20.20.1:5000/v3}}}}}' > /tmp/clouds.json"]);
+                yield exec.exec("juju add-cloud microstack --client -f /tmp/clouds.json");
+                yield exec.exec("bash", ["-c", 'source /var/snap/microstack/common/etc/microstack.rc && echo "{credentials: {microstack: {admin: {auth-type: userpass, username: $OS_USERNAME, password: $OS_PASSWORD, project-domain-name: $OS_PROJECT_DOMAIN_NAME, tenant-name: $OS_PROJECT_NAME, user-domain-name: $OS_USER_DOMAIN_NAME, version: \'$OS_IDENTITY_API_VERSION\'}}}}" > /tmp/credentials.json']);
+                yield exec.exec("juju add-credential microstack --client -f /tmp/credentials.json");
+                core.endGroup();
+                // note (rgildein): remove image-stream=daily
+                bootstrap_command = bootstrap_command.replace(" --model-default image-stream=daily", "");
+                bootstrap_command = `${bootstrap_command} --bootstrap-series=${os_series} --metadata-source=/tmp/simplestreams --model-default network=test --model-default external-network=external --bootstrap-constraints=\"allocate-public-ip=true\"`;
+            }
             else if (credentials_yaml != "") {
                 const options = {};
                 options.silent = true;
                 const juju_dir = `${HOME}/.local/share/juju`;
-                yield exec.exec("sudo snap install juju --classic");
                 yield exec.exec(`mkdir -p ${juju_dir}`);
                 yield exec.exec("bash", ["-c", `echo "${credentials_yaml}" | base64 -d > ${juju_dir}/credentials.yaml`], options);
                 if (clouds_yaml != "") {
