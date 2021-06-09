@@ -1,6 +1,9 @@
 name: Test Operator Setup
 on:
-- push
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
 
 jobs:
   test-lxd:
