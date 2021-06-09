@@ -1584,10 +1584,17 @@ const exec = __importStar(__nccwpck_require__(514));
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
         const controller_name = process.env["CONTROLLER_NAME"];
+        const provider = core.getInput("provider");
         try {
             if (controller_name) {
                 core.addPath('/snap/bin');
                 yield exec.exec(`juju destroy-controller -y ${controller_name} --destroy-all-models --destroy-storage`);
+                if (provider === "microstack") {
+                    yield exec.exec("rm -rf /tmp/simplestreams");
+                    yield exec.exec("openstack image delete focal");
+                    yield exec.exec("juju remove-credential microstack admin --client");
+                    yield exec.exec("juju remove-cloud microstack --client");
+                }
             }
         }
         catch (error) {
