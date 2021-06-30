@@ -1596,7 +1596,7 @@ function run() {
             core.startGroup("Install tox");
             yield exec.exec("sudo apt-get update -yqq");
             yield exec.exec("sudo apt-get install -yqq python3-pip");
-            yield exec.exec("pip3 install tox");
+            yield exec.exec("sudo pip3 install tox");
             core.endGroup();
             core.startGroup("Install Juju");
             yield exec.exec("sudo snap install juju --classic");

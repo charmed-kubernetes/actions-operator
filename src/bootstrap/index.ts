@@ -22,7 +22,7 @@ async function run() {
         core.startGroup("Install tox");
         await exec.exec("sudo apt-get update -yqq");
         await exec.exec("sudo apt-get install -yqq python3-pip");
-        await exec.exec("pip3 install tox");
+        await exec.exec("sudo pip3 install tox");
         core.endGroup();
         core.startGroup("Install Juju");
         await exec.exec("sudo snap install juju --classic");
