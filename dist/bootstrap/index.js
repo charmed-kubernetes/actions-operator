@@ -1662,6 +1662,10 @@ function run() {
             yield exec.exec("sudo snap install charm --classic");
             yield exec.exec("sudo snap install charmcraft --classic");
             yield exec.exec(bootstrap_command);
+            if (provider === "microk8s") {
+                // microk8s is the only provider that doesn't add a default model during bootstrap
+                yield exec.exec('sg microk8s -c "juju add-model default"');
+            }
             core.exportVariable('CONTROLLER_NAME', controller_name);
         }
         catch (error) {

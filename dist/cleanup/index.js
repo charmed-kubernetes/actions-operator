@@ -1588,6 +1588,12 @@ function run() {
         try {
             if (controller_name) {
                 core.addPath('/snap/bin');
+                if (provider === "microk8s") {
+                    // Sometimes K8s takes a really long time to acknowledge to Juju that a resource has been
+                    // cleaned up and thus Juju gets stuck on destroying the controller. Forcibly clean up any
+                    // models without waiting for acknowledgement from K8s to avoid a timeout while cleaning up.
+                    yield exec.exec('sg microk8s -c "juju models --format=json | jq -r \'.models[].\\"short-name\\"\' | grep -v controller | xargs juju destroy-model --destroy-storage --force --no-wait -y"');
+                }
                 yield exec.exec(`juju destroy-controller -y ${controller_name} --destroy-all-models --destroy-storage`);
                 if (provider === "microstack") {
                     yield exec.exec("rm -rf /tmp/simplestreams");
