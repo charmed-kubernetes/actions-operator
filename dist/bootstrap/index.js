@@ -1629,7 +1629,7 @@ function run() {
                 core.startGroup("Initialize microk8s");
                 yield exec.exec('bash', ['-c', 'sudo usermod -a -G microk8s $USER']);
                 yield exec.exec('sg microk8s -c "microk8s status --wait-ready"');
-                yield exec.exec('sg microk8s -c "microk8s enable storage dns"');
+                yield exec.exec('sg microk8s -c "microk8s enable storage dns rbac"');
                 bootstrap_command = `sg microk8s -c "${bootstrap_command}"`;
                 core.endGroup();
             }

@@ -54,7 +54,7 @@ async function run() {
             core.startGroup("Initialize microk8s");
             await exec.exec('bash', ['-c', 'sudo usermod -a -G microk8s $USER']);
             await exec.exec('sg microk8s -c "microk8s status --wait-ready"');
-            await exec.exec('sg microk8s -c "microk8s enable storage dns"');
+            await exec.exec('sg microk8s -c "microk8s enable storage dns rbac"');
             bootstrap_command = `sg microk8s -c "${bootstrap_command}"`
             core.endGroup();
         } else if (provider === "microstack") {
