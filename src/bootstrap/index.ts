@@ -27,32 +27,44 @@ async function run() {
         core.startGroup("Install Juju");
         await exec.exec("sudo snap install juju --classic");
         core.endGroup();
+        core.startGroup("Install tools");
         await exec.exec("sudo snap install jq");
+        await exec.exec("sudo snap install charm --classic");
+        await exec.exec("sudo snap install charmcraft --classic");
+        core.endGroup();
         let bootstrap_command = `juju bootstrap --debug --verbose ${provider} ${bootstrap_options}`
         if (provider === "lxd") {
 	    const options: exec.ExecOptions = {}
 	    options.ignoreReturnCode = true;
+            core.startGroup("Install LXD");
             await exec.exec("sudo apt-get remove -qy lxd lxd-client", [], options);
             await exec.exec("sudo snap install core");
             await exec.exec("sudo snap install lxd");
+            core.endGroup();
+            core.startGroup("Initialize LXD");
             await exec.exec("sudo lxd waitready");
             await exec.exec("sudo lxd init --auto");
             await exec.exec("sudo chmod a+wr /var/snap/lxd/common/lxd/unix.socket");
             await exec.exec("lxc network set lxdbr0 ipv6.address none");
+            core.endGroup();
         } else if (provider === "microk8s") {
+            core.startGroup("Install microk8s");
             await exec.exec("sudo snap install microk8s --classic");
+            core.endGroup();
+            core.startGroup("Initialize microk8s");
             await exec.exec('bash', ['-c', 'sudo usermod -a -G microk8s $USER']);
             await exec.exec('sg microk8s -c "microk8s status --wait-ready"');
             await exec.exec('sg microk8s -c "microk8s enable storage dns"');
             bootstrap_command = `sg microk8s -c "${bootstrap_command}"`
+            core.endGroup();
         } else if (provider === "microstack") {
-            core.startGroup("Install Microstack");
+            core.startGroup("Install MicroStack");
             let os_series = "focal";
             let os_region = "microstack";
             await exec.exec("sudo snap install microstack --beta --devmode");
             await exec.exec("sudo snap alias microstack.openstack openstack");
             core.endGroup();
-            core.startGroup("Initial Microstack");
+            core.startGroup("Initialize MicroStack");
             await exec.exec("sudo microstack init --auto --control");
             // note (rgildein): enable ipv4 ip forwarding is necessary for machine to have internet access
             //                  https://bugs.launchpad.net/microstack/+bug/1812415
@@ -72,7 +84,7 @@ async function run() {
 	    const options: exec.ExecOptions = {}
 	    options.silent = true;
             const juju_dir = `${HOME}/.local/share/juju`;
-            await exec.exec(`mkdir -p ${juju_dir}`)
+            await exec.exec("mkdir", ["-p", juju_dir], options);
             await exec.exec("bash", ["-c", `echo "${credentials_yaml}" | base64 -d > ${juju_dir}/credentials.yaml`], options);
             if (clouds_yaml != "" ) {
                 await exec.exec("bash", ["-c", `echo "${clouds_yaml}" | base64 -d > ${juju_dir}/clouds.yaml`], options);
@@ -82,14 +94,13 @@ async function run() {
             return
         }
 
-        await exec.exec("sudo snap install charm --classic");
-        await exec.exec("sudo snap install charmcraft --classic");
-
+        core.startGroup("Bootstrap controller");
         await exec.exec(bootstrap_command);
         if (provider === "microk8s") {
             // microk8s is the only provider that doesn't add a default model during bootstrap
             await exec.exec('sg microk8s -c "juju add-model default"');
         }
+        core.endGroup();
         core.exportVariable('CONTROLLER_NAME', controller_name);
     } catch(error) {
         core.setFailed(error.message);
