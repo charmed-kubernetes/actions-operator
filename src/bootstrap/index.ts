@@ -19,6 +19,10 @@ async function run() {
     const bootstrap_options = `${controller_name} --bootstrap-constraints "cores=2 mem=4G" --model-default test-mode=true --model-default image-stream=daily --model-default automatically-retry-hooks=false --model-default logging-config="<root>=DEBUG" ${extra_bootstrap_options}`;
     try {
         core.addPath('/snap/bin');
+        core.startGroup("Install core snap");
+        // This can prevent a udev issue when installing other snaps.
+        await exec.exec("sudo snap install core");
+        core.endGroup();
         core.startGroup("Install tox");
         await exec.exec("sudo apt-get update -yqq");
         await exec.exec("sudo apt-get install -yqq python3-pip");
@@ -38,7 +42,6 @@ async function run() {
 	    options.ignoreReturnCode = true;
             core.startGroup("Install LXD");
             await exec.exec("sudo apt-get remove -qy lxd lxd-client", [], options);
-            await exec.exec("sudo snap install core");
             await exec.exec("sudo snap install lxd");
             core.endGroup();
             core.startGroup("Initialize LXD");
