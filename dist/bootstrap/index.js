@@ -1633,6 +1633,8 @@ function run() {
                 yield exec.exec('bash', ['-c', 'sudo usermod -a -G microk8s $USER']);
                 yield exec.exec('sg microk8s -c "microk8s status --wait-ready"');
                 yield exec.exec('sg microk8s -c "microk8s enable storage dns rbac"');
+                // workaround for https://bugs.launchpad.net/juju/+bug/1937282
+                yield exec.exec('sg microk8s -c "microk8s kubectl wait --for=condition=available --timeout=5m -nkube-system deployment/coredns deployment/hostpath-provisioner"');
                 bootstrap_command = `sg microk8s -c "${bootstrap_command}"`;
                 core.endGroup();
             }

@@ -58,6 +58,8 @@ async function run() {
             await exec.exec('bash', ['-c', 'sudo usermod -a -G microk8s $USER']);
             await exec.exec('sg microk8s -c "microk8s status --wait-ready"');
             await exec.exec('sg microk8s -c "microk8s enable storage dns rbac"');
+            // workaround for https://bugs.launchpad.net/juju/+bug/1937282
+            await exec.exec('sg microk8s -c "microk8s kubectl wait --for=condition=available --timeout=5m -nkube-system deployment/coredns deployment/hostpath-provisioner"');
             bootstrap_command = `sg microk8s -c "${bootstrap_command}"`
             core.endGroup();
         } else if (provider === "microstack") {
