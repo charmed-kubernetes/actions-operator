@@ -60,7 +60,11 @@ async function run() {
             await exec.exec('sg microk8s -c "microk8s enable storage dns rbac"');
             // workarounds for https://bugs.launchpad.net/juju/+bug/1937282
             await exec.exec('sg microk8s -c "microk8s kubectl wait --for=condition=available --timeout=5m -nkube-system deployment/coredns deployment/hostpath-provisioner"');
+            await exec.exec('sg microk8s -c "microk8s kubectl rollout status deployment/coredns -n kube-system"');
             await exec.exec('sg microk8s -c "microk8s kubectl rollout status deployment/hostpath-provisioner -n kube-system"');
+            await exec.exec('sg microk8s -c "microk8s kubectl create secret generic wait-secret"');
+            await exec.exec('sg microk8s -c "for attempt in {0..9}; do if microk8s kubectl get secret wait-secret > /dev/null 2>&1; then exit 0; fi; echo Waiting for secrets...; sleep 10; done; exit 1"');
+            await exec.exec('sg microk8s -c "microk8s kubectl delete secret wait-secret"');
             bootstrap_command = `sg microk8s -c "${bootstrap_command}"`
             core.endGroup();
         } else if (provider === "microstack") {
