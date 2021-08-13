@@ -40,10 +40,12 @@ async function run() {
             await exec.exec("sudo chmod a+wr /var/snap/lxd/common/lxd/unix.socket");
             await exec.exec("lxc network set lxdbr0 ipv6.address none");
         } else if (provider === "microk8s") {
+            await exec.exec('sudo lxd init --auto');
             await exec.exec("sudo snap install microk8s --classic");
             await exec.exec('bash', ['-c', 'sudo usermod -a -G microk8s $USER']);
             await exec.exec('sg microk8s -c "microk8s status --wait-ready"');
             await exec.exec('sg microk8s -c "microk8s enable storage dns"');
+            await exec.exec('sleep 120');
             bootstrap_command = `sg microk8s -c "${bootstrap_command}"`
         } else if (provider === "microstack") {
             core.startGroup("Install Microstack");
@@ -83,7 +85,7 @@ async function run() {
         }
 
         await exec.exec("sudo snap install charm --classic");
-        await exec.exec("sudo snap install charmcraft --classic");
+        await exec.exec("sudo snap install charmcraft --classic --channel=latest/candidate");
 
         await exec.exec(bootstrap_command);
         core.exportVariable('CONTROLLER_NAME', controller_name);

@@ -1615,10 +1615,14 @@ function run() {
                 yield exec.exec("lxc network set lxdbr0 ipv6.address none");
             }
             else if (provider === "microk8s") {
+                yield exec.exec('sudo lxd init --auto');
+                yield exec.exec("sudo chmod a+wr /var/snap/lxd/common/lxd/unix.socket");
+                yield exec.exec('bash', ['-c', 'sudo usermod -a -G lxd $USER']);
                 yield exec.exec("sudo snap install microk8s --classic");
                 yield exec.exec('bash', ['-c', 'sudo usermod -a -G microk8s $USER']);
                 yield exec.exec('sg microk8s -c "microk8s status --wait-ready"');
                 yield exec.exec('sg microk8s -c "microk8s enable storage dns"');
+                yield exec.exec('sleep 120');
                 bootstrap_command = `sg microk8s -c "${bootstrap_command}"`;
             }
             else if (provider === "microstack") {
@@ -1660,7 +1664,7 @@ function run() {
                 return;
             }
             yield exec.exec("sudo snap install charm --classic");
-            yield exec.exec("sudo snap install charmcraft --classic");
+            yield exec.exec("sudo snap install charmcraft --classic --channel=latest/candidate");
             yield exec.exec(bootstrap_command);
             core.exportVariable('CONTROLLER_NAME', controller_name);
         }
