@@ -14,6 +14,8 @@ for i in {0..12}; do
         fi
         echo "Waiting for test SA token..."
         sleep 10
+    else
+        break
     fi
 done
 echo "Found test SA token; removing"

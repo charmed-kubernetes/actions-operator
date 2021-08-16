@@ -1623,7 +1623,7 @@ function run() {
             yield exec.exec("sudo snap install charm --classic");
             yield exec.exec("sudo snap install charmcraft --classic");
             core.endGroup();
-            let bootstrap_command = `juju bootstrap --debug --verbose ${provider} ${bootstrap_options}`;
+            let bootstrap_command = `juju bootstrap --debug ${provider} ${bootstrap_options}`;
             if (provider === "lxd") {
                 // no special logic; LXD already installed / required for charmcraft build
             }
