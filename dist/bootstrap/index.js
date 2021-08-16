@@ -1624,13 +1624,15 @@ function run() {
             yield exec.exec("sudo snap install charmcraft --classic");
             core.endGroup();
             let bootstrap_command = `juju bootstrap --debug --verbose ${provider} ${bootstrap_options}`;
-            if (provider === "microk8s") {
+            if (provider === "lxd") {
+                // no special logic; LXD already installed / required for charmcraft build
+            }
+            else if (provider === "microk8s") {
                 core.startGroup("Install microk8s");
                 yield exec.exec("sudo snap install microk8s --classic");
                 core.endGroup();
                 core.startGroup("Initialize microk8s");
                 yield exec.exec('bash', ['-c', 'sudo usermod -a -G microk8s $USER']);
-                yield exec.exec('ls -l'); // testing / debugging
                 yield exec.exec('sg microk8s -c "scripts/microk8s-init.sh"');
                 bootstrap_command = `sg microk8s -c "${bootstrap_command}"`;
                 core.endGroup();
@@ -1677,6 +1679,8 @@ function run() {
             yield exec.exec(bootstrap_command);
             if (provider === "microk8s") {
                 // microk8s is the only provider that doesn't add a default model during bootstrap
+                // it's also the only one where we need to wait for the controller to be ready
+                yield exec.exec(`sg microk8s -c "microk8s kubectl wait --for=condition=available --timeout=5m -n controller-${controller_name} deployment/modeloperator"`);
                 yield exec.exec('sg microk8s -c "juju add-model default"');
             }
             core.endGroup();
