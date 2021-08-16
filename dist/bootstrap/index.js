@@ -1680,7 +1680,7 @@ function run() {
             if (provider === "microk8s") {
                 // microk8s is the only provider that doesn't add a default model during bootstrap
                 // it's also the only one where we need to wait for the controller to be ready
-                yield exec.exec(`sg microk8s -c "microk8s kubectl wait --for=condition=available --timeout=5m -n controller-${controller_name} deployment/modeloperator"`);
+                yield exec.exec(`sg microk8s -c "scripts/microk8s-controller-wait.sh ${controller_name}`);
                 yield exec.exec('sg microk8s -c "juju add-model default"');
             }
             core.endGroup();
