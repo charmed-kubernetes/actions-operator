@@ -49,7 +49,7 @@ async function run() {
         await exec.exec("sudo snap install charm --classic");
         await exec.exec("sudo snap install charmcraft --classic");
         core.endGroup();
-        let bootstrap_command = `juju bootstrap --debug ${provider} ${bootstrap_options}`
+        let bootstrap_command = `juju bootstrap --debug --verbose ${provider} ${bootstrap_options}`
         if (provider === "lxd") {
             // no special logic; LXD already installed / required for charmcraft build
         } else if (provider === "microk8s") {
@@ -100,13 +100,15 @@ async function run() {
 
         core.startGroup("Bootstrap controller");
         await exec.exec(bootstrap_command);
+        core.endGroup();
         if (provider === "microk8s") {
+            core.startGroup("Post-bootstrap");
             // microk8s is the only provider that doesn't add a default model during bootstrap
             // it's also the only one where we need to wait for the controller to be ready
             await exec.exec(`sg microk8s -c "scripts/microk8s-controller-wait.sh ${controller_name}`);
             await exec.exec('sg microk8s -c "juju add-model default"');
+            core.endGroup();
         }
-        core.endGroup();
         core.exportVariable('CONTROLLER_NAME', controller_name);
     } catch(error) {
         core.setFailed(error.message);

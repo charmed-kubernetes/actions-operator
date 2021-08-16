@@ -14,3 +14,4 @@ for i in {0..12}; do
     fi
 done
 echo "Controller ready"
+microk8s kubectl describe -n "controller-$1" pod/controller-0
