@@ -1591,11 +1591,24 @@ function run() {
         const extra_bootstrap_options = core.getInput("bootstrap-options");
         const controller_name = `github-pr-${GITHUB_SHA}`;
         const bootstrap_options = `${controller_name} --bootstrap-constraints "cores=2 mem=4G" --model-default test-mode=true --model-default image-stream=daily --model-default automatically-retry-hooks=false --model-default logging-config="<root>=DEBUG" ${extra_bootstrap_options}`;
+        const ignoreFail = {};
+        ignoreFail.ignoreReturnCode = true;
         try {
             core.addPath('/snap/bin');
             core.startGroup("Install core snap");
             // This can prevent a udev issue when installing other snaps.
             yield exec.exec("sudo snap install core");
+            core.endGroup();
+            // LXD is now a pre-req for building any charm with charmcraft
+            core.startGroup("Install LXD");
+            yield exec.exec("sudo apt-get remove -qy lxd lxd-client", [], ignoreFail);
+            yield exec.exec("sudo snap install lxd");
+            core.endGroup();
+            core.startGroup("Initialize LXD");
+            yield exec.exec("sudo lxd waitready");
+            yield exec.exec("sudo lxd init --auto");
+            yield exec.exec("sudo chmod a+wr /var/snap/lxd/common/lxd/unix.socket");
+            yield exec.exec("lxc network set lxdbr0 ipv6.address none");
             core.endGroup();
             core.startGroup("Install tox");
             yield exec.exec("sudo apt-get update -yqq");
@@ -1611,35 +1624,14 @@ function run() {
             yield exec.exec("sudo snap install charmcraft --classic");
             core.endGroup();
             let bootstrap_command = `juju bootstrap --debug --verbose ${provider} ${bootstrap_options}`;
-            if (provider === "lxd") {
-                const options = {};
-                options.ignoreReturnCode = true;
-                core.startGroup("Install LXD");
-                yield exec.exec("sudo apt-get remove -qy lxd lxd-client", [], options);
-                yield exec.exec("sudo snap install lxd");
-                core.endGroup();
-                core.startGroup("Initialize LXD");
-                yield exec.exec("sudo lxd waitready");
-                yield exec.exec("sudo lxd init --auto");
-                yield exec.exec("sudo chmod a+wr /var/snap/lxd/common/lxd/unix.socket");
-                yield exec.exec("lxc network set lxdbr0 ipv6.address none");
-                core.endGroup();
-            }
-            else if (provider === "microk8s") {
+            if (provider === "microk8s") {
                 core.startGroup("Install microk8s");
                 yield exec.exec("sudo snap install microk8s --classic");
                 core.endGroup();
                 core.startGroup("Initialize microk8s");
                 yield exec.exec('bash', ['-c', 'sudo usermod -a -G microk8s $USER']);
-                yield exec.exec('sg microk8s -c "microk8s status --wait-ready"');
-                yield exec.exec('sg microk8s -c "microk8s enable storage dns rbac"');
-                // workarounds for https://bugs.launchpad.net/juju/+bug/1937282
-                yield exec.exec('sg microk8s -c "microk8s kubectl wait --for=condition=available --timeout=5m -nkube-system deployment/coredns deployment/hostpath-provisioner"');
-                yield exec.exec('sg microk8s -c "microk8s kubectl rollout status deployment/coredns -n kube-system"');
-                yield exec.exec('sg microk8s -c "microk8s kubectl rollout status deployment/hostpath-provisioner -n kube-system"');
-                yield exec.exec('sg microk8s -c "microk8s kubectl create secret generic wait-secret"');
-                yield exec.exec('sg microk8s -c "for attempt in {0..9}; do if microk8s kubectl get secret wait-secret > /dev/null 2>&1; then exit 0; fi; echo Waiting for secrets...; sleep 10; done; exit 1"');
-                yield exec.exec('sg microk8s -c "microk8s kubectl delete secret wait-secret"');
+                yield exec.exec('ls -l'); // testing / debugging
+                yield exec.exec('sg microk8s -c "scripts/microk8s-init.sh"');
                 bootstrap_command = `sg microk8s -c "${bootstrap_command}"`;
                 core.endGroup();
             }
