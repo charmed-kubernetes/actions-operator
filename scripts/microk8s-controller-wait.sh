@@ -4,7 +4,7 @@ controller_name="$1"
 cmd="microk8s kubectl get -n controller-$controller_name pod/controller-0 -o jsonpath='{.metadata.annotations.controller\\.juju\\.is/id}'"
 
 for i in {0..12}; do
-    if [[ -z "$(cmd)" ]]; then
+    if [[ -z "$cmd" ]]; then
         if [[ $i == 12 ]]; then
             echo "Timed out waiting for controller"
             exit 1
