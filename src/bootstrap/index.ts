@@ -58,6 +58,7 @@ async function run() {
             core.endGroup();
             core.startGroup("Initialize microk8s");
             await exec.exec('bash', ['-c', 'sudo usermod -a -G microk8s $USER']);
+            // microk8s needs some additional things done to ensure it's ready for Juju.
             await exec.exec('sg microk8s -c "scripts/microk8s-init.sh"');
             bootstrap_command = `sg microk8s -c "${bootstrap_command}"`
             core.endGroup();
@@ -103,10 +104,11 @@ async function run() {
         core.endGroup();
         if (provider === "microk8s") {
             core.startGroup("Post-bootstrap");
-            // microk8s is the only provider that doesn't add a default model during bootstrap
-            // it's also the only one where we need to wait for the controller to be ready
-            await exec.exec(`sg microk8s -c "scripts/microk8s-controller-wait.sh ${controller_name}`);
-            await exec.exec('sg microk8s -c "juju add-model default"');
+            // microk8s is the only provider that doesn't add a (non-controller) model during bootstrap.
+            // Tests using pytest-operator will create their own model, but for those that don't, we
+            // shouldn't leave them with the controller potentially conflicting with things they add
+            // to the model.
+            await exec.exec('sg microk8s -c "juju add-model testing"');
             core.endGroup();
         }
         core.exportVariable('CONTROLLER_NAME', controller_name);
