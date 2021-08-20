@@ -7,6 +7,9 @@
     "build": "ncc build src/bootstrap/index.ts -o dist/bootstrap --license licenses.txt && ncc build src/cleanup/index.ts -o dist/cleanup --license licenses.txt",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
+  "files": [
+    "scripts/*"
+  ],
   "author": "Adam Stokes <adam.stokes@canonical.com>",
   "license": "MIT",
   "dependencies": {
