@@ -7,6 +7,39 @@ declare var process : {
     }
 }
 
+const ignoreFail: exec.ExecOptions = {"ignoreReturnCode": true}
+
+async function exec_as_microk8s(cmd, options = {}) {
+    return await exec.exec('sg', ['microk8s', '-c', cmd], options);
+}
+
+async function microk8s_init() {
+    // microk8s needs some additional things done to ensure it's ready for Juju.
+    await exec_as_microk8s("microk8s status --wait-ready");
+    await exec_as_microk8s("microk8s enable storage dns rbac");
+    // workarounds for https://bugs.launchpad.net/juju/+bug/1937282
+    await exec_as_microk8s("microk8s kubectl -n kube-system rollout status deployment/coredns");
+    await exec_as_microk8s("microk8s kubectl -n kube-system rollout status deployment/hostpath-provisioner");
+    await exec_as_microk8s("microk8s kubectl create serviceaccount test-sa");
+    let rc = 0;
+    console.log("Waiting for test SA token...");
+    for(let i = 0; i < 12; i++) {
+        rc = await exec_as_microk8s("microk8s kubectl get secrets | grep -q test-sa-token-", ignoreFail);
+        if(rc == 0) {
+            break;
+        }
+        if(i == 12) {
+            core.setFailed("Timed out waiting for test SA token");
+            return false;
+        }
+        // sleep 10s
+        await new Promise(resolve => setTimeout(resolve, 10000));
+    }
+    console.log("Found test SA token; removing");
+    await exec_as_microk8s("microk8s kubectl delete serviceaccount test-sa");
+    return true;
+}
+
 async function run() {
     const HOME = process.env["HOME"]
     const GITHUB_SHA = process.env["GITHUB_SHA"].slice(0, 5)
@@ -17,8 +50,6 @@ async function run() {
     const extra_bootstrap_options = core.getInput("bootstrap-options");
     const controller_name = `github-pr-${GITHUB_SHA}`;
     const bootstrap_options = `${controller_name} --bootstrap-constraints "cores=2 mem=4G" --model-default test-mode=true --model-default image-stream=daily --model-default automatically-retry-hooks=false --model-default logging-config="<root>=DEBUG" ${extra_bootstrap_options}`;
-    const ignoreFail: exec.ExecOptions = {}
-    ignoreFail.ignoreReturnCode = true;
     try {
         core.addPath('/snap/bin');
         core.startGroup("Install core snap");
@@ -58,8 +89,9 @@ async function run() {
             core.endGroup();
             core.startGroup("Initialize microk8s");
             await exec.exec('bash', ['-c', 'sudo usermod -a -G microk8s $USER']);
-            // microk8s needs some additional things done to ensure it's ready for Juju.
-            await exec.exec(`sg microk8s -c "${__dirname}/scripts/microk8s-init.sh"`);
+            if(!await microk8s_init()) {
+                return;
+            }
             bootstrap_command = `sg microk8s -c "${bootstrap_command}"`
             core.endGroup();
         } else if (provider === "microstack") {
@@ -108,7 +140,7 @@ async function run() {
             // Tests using pytest-operator will create their own model, but for those that don't, we
             // shouldn't leave them with the controller potentially conflicting with things they add
             // to the model.
-            await exec.exec('sg microk8s -c "juju add-model testing"');
+            await exec_as_microk8s("juju add-model testing")
             core.endGroup();
         }
         core.exportVariable('CONTROLLER_NAME', controller_name);
