@@ -7,6 +7,39 @@ declare var process : {
     }
 }
 
+const ignoreFail: exec.ExecOptions = {"ignoreReturnCode": true}
+
+async function exec_as_microk8s(cmd, options = {}) {
+    return await exec.exec('sg', ['microk8s', '-c', cmd], options);
+}
+
+async function microk8s_init() {
+    // microk8s needs some additional things done to ensure it's ready for Juju.
+    await exec_as_microk8s("microk8s status --wait-ready");
+    await exec_as_microk8s("microk8s enable storage dns rbac");
+    // workarounds for https://bugs.launchpad.net/juju/+bug/1937282
+    await exec_as_microk8s("microk8s kubectl -n kube-system rollout status deployment/coredns");
+    await exec_as_microk8s("microk8s kubectl -n kube-system rollout status deployment/hostpath-provisioner");
+    await exec_as_microk8s("microk8s kubectl create serviceaccount test-sa");
+    let rc = 0;
+    console.log("Waiting for test SA token...");
+    for(let i = 0; i < 12; i++) {
+        rc = await exec_as_microk8s("microk8s kubectl get secrets | grep -q test-sa-token-", ignoreFail);
+        if(rc == 0) {
+            break;
+        }
+        if(i == 12) {
+            core.setFailed("Timed out waiting for test SA token");
+            return false;
+        }
+        // sleep 10s
+        await new Promise(resolve => setTimeout(resolve, 10000));
+    }
+    console.log("Found test SA token; removing");
+    await exec_as_microk8s("microk8s kubectl delete serviceaccount test-sa");
+    return true;
+}
+
 async function run() {
     const HOME = process.env["HOME"]
     const GITHUB_SHA = process.env["GITHUB_SHA"].slice(0, 5)
@@ -19,40 +52,56 @@ async function run() {
     const bootstrap_options = `${controller_name} --bootstrap-constraints "cores=2 mem=4G" --model-default test-mode=true --model-default image-stream=daily --model-default automatically-retry-hooks=false --model-default logging-config="<root>=DEBUG" ${extra_bootstrap_options}`;
     try {
         core.addPath('/snap/bin');
+        core.startGroup("Install core snap");
+        // This can prevent a udev issue when installing other snaps.
+        await exec.exec("sudo snap install core");
+        core.endGroup();
+        // LXD is now a pre-req for building any charm with charmcraft
+        core.startGroup("Install LXD");
+        await exec.exec("sudo apt-get remove -qy lxd lxd-client", [], ignoreFail);
+        await exec.exec("sudo snap install lxd");
+        core.endGroup();
+        core.startGroup("Initialize LXD");
+        await exec.exec("sudo lxd waitready");
+        await exec.exec("sudo lxd init --auto");
+        await exec.exec("sudo chmod a+wr /var/snap/lxd/common/lxd/unix.socket");
+        await exec.exec("lxc network set lxdbr0 ipv6.address none");
+        core.endGroup();
         core.startGroup("Install tox");
         await exec.exec("sudo apt-get update -yqq");
         await exec.exec("sudo apt-get install -yqq python3-pip");
-        await exec.exec("pip3 install tox");
+        await exec.exec("sudo --preserve-env=http_proxy,https_proxy,no_proxy pip3 install tox");
         core.endGroup();
         core.startGroup("Install Juju");
         await exec.exec("sudo snap install juju --classic");
         core.endGroup();
+        core.startGroup("Install tools");
         await exec.exec("sudo snap install jq");
+        await exec.exec("sudo snap install charm --classic");
+        await exec.exec("sudo snap install charmcraft --classic");
+        core.endGroup();
         let bootstrap_command = `juju bootstrap --debug --verbose ${provider} ${bootstrap_options}`
         if (provider === "lxd") {
-	    const options: exec.ExecOptions = {}
-	    options.ignoreReturnCode = true;
-            await exec.exec("sudo apt-get remove -qy lxd lxd-client", [], options);
-            await exec.exec("sudo snap install core");
-            await exec.exec("sudo snap install lxd");
-            await exec.exec("sudo lxd waitready");
-            await exec.exec("sudo lxd init --auto");
-            await exec.exec("sudo chmod a+wr /var/snap/lxd/common/lxd/unix.socket");
-            await exec.exec("lxc network set lxdbr0 ipv6.address none");
+            // no special logic; LXD already installed / required for charmcraft build
         } else if (provider === "microk8s") {
+            core.startGroup("Install microk8s");
             await exec.exec("sudo snap install microk8s --classic");
+            core.endGroup();
+            core.startGroup("Initialize microk8s");
             await exec.exec('bash', ['-c', 'sudo usermod -a -G microk8s $USER']);
-            await exec.exec('sg microk8s -c "microk8s status --wait-ready"');
-            await exec.exec('sg microk8s -c "microk8s enable storage dns"');
+            if(!await microk8s_init()) {
+                return;
+            }
             bootstrap_command = `sg microk8s -c "${bootstrap_command}"`
+            core.endGroup();
         } else if (provider === "microstack") {
-            core.startGroup("Install Microstack");
+            core.startGroup("Install MicroStack");
             let os_series = "focal";
             let os_region = "microstack";
             await exec.exec("sudo snap install microstack --beta --devmode");
             await exec.exec("sudo snap alias microstack.openstack openstack");
             core.endGroup();
-            core.startGroup("Initial Microstack");
+            core.startGroup("Initialize MicroStack");
             await exec.exec("sudo microstack init --auto --control");
             // note (rgildein): enable ipv4 ip forwarding is necessary for machine to have internet access
             //                  https://bugs.launchpad.net/microstack/+bug/1812415
@@ -72,7 +121,7 @@ async function run() {
 	    const options: exec.ExecOptions = {}
 	    options.silent = true;
             const juju_dir = `${HOME}/.local/share/juju`;
-            await exec.exec(`mkdir -p ${juju_dir}`)
+            await exec.exec("mkdir", ["-p", juju_dir], options);
             await exec.exec("bash", ["-c", `echo "${credentials_yaml}" | base64 -d > ${juju_dir}/credentials.yaml`], options);
             if (clouds_yaml != "" ) {
                 await exec.exec("bash", ["-c", `echo "${clouds_yaml}" | base64 -d > ${juju_dir}/clouds.yaml`], options);
@@ -82,10 +131,18 @@ async function run() {
             return
         }
 
-        await exec.exec("sudo snap install charm --classic");
-        await exec.exec("sudo snap install charmcraft --classic");
-
+        core.startGroup("Bootstrap controller");
         await exec.exec(bootstrap_command);
+        core.endGroup();
+        if (provider === "microk8s") {
+            core.startGroup("Post-bootstrap");
+            // microk8s is the only provider that doesn't add a (non-controller) model during bootstrap.
+            // Tests using pytest-operator will create their own model, but for those that don't, we
+            // shouldn't leave them with the controller potentially conflicting with things they add
+            // to the model.
+            await exec_as_microk8s("juju add-model testing")
+            core.endGroup();
+        }
         core.exportVariable('CONTROLLER_NAME', controller_name);
     } catch(error) {
         core.setFailed(error.message);
