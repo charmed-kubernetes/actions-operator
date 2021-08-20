@@ -59,7 +59,7 @@ async function run() {
             core.startGroup("Initialize microk8s");
             await exec.exec('bash', ['-c', 'sudo usermod -a -G microk8s $USER']);
             // microk8s needs some additional things done to ensure it's ready for Juju.
-            await exec.exec('sg microk8s -c "scripts/microk8s-init.sh"');
+            await exec.exec(`sg microk8s -c "${__dirname}/scripts/microk8s-init.sh"`);
             bootstrap_command = `sg microk8s -c "${bootstrap_command}"`
             core.endGroup();
         } else if (provider === "microstack") {
