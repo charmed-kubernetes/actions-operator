@@ -16,9 +16,9 @@ jobs:
         with:
           provider: lxd
 
-      - name: Deploy ubuntu
+      - name: Run Tests
         run: |
-          juju deploy ubuntu
+          tox -e tests -- -k "not k8s"
           juju status
           exit $?
 
@@ -32,11 +32,9 @@ jobs:
         with:
           provider: microk8s
 
-      - name: Deploy minio
+      - name: Run Tests
         run: |
-          juju deploy cs:minio
-          juju status
-          exit $?
+          tox -e tests -- -k "not machine"
 
   test-microstack:
     runs-on: self-hosted
@@ -48,11 +46,9 @@ jobs:
         with:
           provider: microstack
 
-      - name: Deploy Ubuntu
+      - name: Run Tests
         run: |
-          juju deploy cs:ubuntu
-          juju status
-          exit $?
+          tox -e tests -- -k "not k8s"
 
   test-vSphere:
     runs-on: self-hosted
@@ -67,8 +63,6 @@ jobs:
           clouds-yaml: ${{ secrets.CLOUDS_YAML }}
           bootstrap-options: "--model-default datastore=vsanDatastore --model-default primary-network=VLAN_2764"
 
-      - name: Deploy ubuntu
+      - name: Run Tests
         run: |
-          juju deploy ubuntu
-          juju status
-          exit $?
+          tox -e tests -- -k "not k8s"

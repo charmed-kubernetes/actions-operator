@@ -66,6 +66,7 @@ async function run() {
         await exec.exec("sudo lxd init --auto");
         await exec.exec("sudo chmod a+wr /var/snap/lxd/common/lxd/unix.socket");
         await exec.exec("lxc network set lxdbr0 ipv6.address none");
+        await exec.exec('bash', ['-c', 'sudo usermod -a -G lxd $USER']);
         core.endGroup();
         core.startGroup("Install tox");
         await exec.exec("sudo apt-get update -yqq");
