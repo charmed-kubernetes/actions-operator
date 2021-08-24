@@ -8,6 +8,10 @@ inputs:
       or a cloud added via the credentials-yaml and clouds-yaml inputs.
     required: false
     default: "lxd"
+  channel:
+    description: "snap channel for the providers which are installed via snap"
+    required: false
+    default: ""
   credentials-yaml:
     description: "A base64-encoded credentials.yaml file to use."
     required: false

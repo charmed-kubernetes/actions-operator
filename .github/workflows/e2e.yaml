@@ -15,6 +15,7 @@ jobs:
       - uses: ./
         with:
           provider: lxd
+          channel: latest/stable
 
       - name: Run Tests
         run: |
@@ -31,6 +32,7 @@ jobs:
       - uses: ./
         with:
           provider: microk8s
+          channel: latest/stable
 
       - name: Run Tests
         run: |
