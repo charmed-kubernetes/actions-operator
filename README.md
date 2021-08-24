@@ -8,7 +8,7 @@ Simply include the action as a step in your Workflow:
 
 ```yaml
 - name: Setup operator environment
-  uses: charmed-kubernetes/actions-operator@master
+  uses: charmed-kubernetes/actions-operator@main
 ```
 
 This will give your job an environment with the following:
@@ -30,7 +30,7 @@ jobs:
     name: Test on Microk8s
     steps:
       - name: Setup operator environment
-        uses: charmed-kubernetes/actions-operator@master
+        uses: charmed-kubernetes/actions-operator@main
         with:
           provider: microk8s
 
@@ -39,7 +39,7 @@ jobs:
     name: Test on AWS
     steps:
       - name: Setup operator environment
-        uses: charmed-kubernetes/actions-operator@master
+        uses: charmed-kubernetes/actions-operator@main
         with:
           provider: aws
           credentials-yaml: ${{ secrets.CREDENTIALS_YAML }}
@@ -49,7 +49,7 @@ jobs:
     name: Test on MAAS
     steps:
       - name: Setup operator environment
-        uses: charmed-kubernetes/actions-operator@master
+        uses: charmed-kubernetes/actions-operator@main
         with:
           provider: maas
           credentials-yaml: ${{ secrets.CREDENTIALS_YAML }}
