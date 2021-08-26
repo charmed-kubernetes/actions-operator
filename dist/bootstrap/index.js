@@ -1732,6 +1732,7 @@ function run() {
         const HOME = process.env["HOME"];
         const GITHUB_SHA = process.env["GITHUB_SHA"].slice(0, 5);
         const provider = core.getInput("provider");
+        const channel = core.getInput("channel");
         const credentials_yaml = core.getInput("credentials-yaml");
         const clouds_yaml = core.getInput("clouds-yaml");
         const extra_bootstrap_options = core.getInput("bootstrap-options");
@@ -1770,11 +1771,18 @@ function run() {
             core.endGroup();
             let bootstrap_command = `juju bootstrap --debug --verbose ${provider} ${bootstrap_options}`;
             if (provider === "lxd") {
-                // no special logic; LXD already installed / required for charmcraft build
+                if (channel !== null) {
+                    yield exec.exec(`sudo snap refresh lxd --channel=${channel}`);
+                }
             }
             else if (provider === "microk8s") {
                 core.startGroup("Install microk8s");
-                yield exec.exec("sudo snap install microk8s --classic");
+                if (channel !== null) {
+                    yield exec.exec(`sudo snap install microk8s --classic --channel=${channel}`);
+                }
+                else {
+                    yield exec.exec("sudo snap install microk8s --classic");
+                }
                 core.endGroup();
                 core.startGroup("Initialize microk8s");
                 yield exec.exec('bash', ['-c', 'sudo usermod -a -G microk8s $USER']);
@@ -1788,7 +1796,12 @@ function run() {
                 core.startGroup("Install MicroStack");
                 let os_series = "focal";
                 let os_region = "microstack";
-                yield exec.exec("sudo snap install microstack --beta --devmode");
+                if (channel !== null) {
+                    yield exec.exec(`sudo snap install microstack --beta --devmode --channel=${channel}`);
+                }
+                else {
+                    yield exec.exec("sudo snap install microstack --beta --devmode");
+                }
                 yield exec.exec("sudo snap alias microstack.openstack openstack");
                 core.endGroup();
                 core.startGroup("Initialize MicroStack");
