@@ -86,7 +86,7 @@ async function run() {
         if (provider === "lxd") {
 	    if (channel !== null){
 		await exec.exec(`sudo snap refresh lxd --channel=${channel}`);
-	    } 
+	    }
         } else if (provider === "microk8s") {
             core.startGroup("Install microk8s");
 	    if (channel !== null){
@@ -100,7 +100,7 @@ async function run() {
             if(!await microk8s_init()) {
                 return;
             }
-            bootstrap_command = `sg microk8s -c "${bootstrap_command}"`
+            bootstrap_command = `sg microk8s -c '${bootstrap_command}'`
             core.endGroup();
         } else if (provider === "microstack") {
             core.startGroup("Install MicroStack");
