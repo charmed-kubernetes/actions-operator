@@ -50,7 +50,9 @@ async function run() {
     const clouds_yaml = core.getInput("clouds-yaml");
     const extra_bootstrap_options = core.getInput("bootstrap-options");
     const controller_name = `github-pr-${GITHUB_SHA}`;
-    const bootstrap_options = `${controller_name} --bootstrap-constraints "cores=2 mem=4G" --model-default test-mode=true --model-default image-stream=daily --model-default automatically-retry-hooks=false --model-default logging-config="<root>=DEBUG" ${extra_bootstrap_options}`;
+    const bootstrap_options = `${controller_name} --model-default test-mode=true --model-default automatically-retry-hooks=false --model-default logging-config="<root>=DEBUG" ${extra_bootstrap_options}`;
+    let bootstrap_constraints = "cores=2 mem=4G";
+    let group = "";
     try {
         core.addPath('/snap/bin');
         core.startGroup("Install core snap");
@@ -86,7 +88,8 @@ async function run() {
         if (provider === "lxd") {
 	    if (channel !== null){
 		await exec.exec(`sudo snap refresh lxd --channel=${channel}`);
-	    } 
+	    }
+            group = "lxd";
         } else if (provider === "microk8s") {
             core.startGroup("Install microk8s");
 	    if (channel !== null){
@@ -100,7 +103,8 @@ async function run() {
             if(!await microk8s_init()) {
                 return;
             }
-            bootstrap_command = `sg microk8s -c "${bootstrap_command}"`
+            group = "microk8s";
+            bootstrap_constraints = "";
             core.endGroup();
         } else if (provider === "microstack") {
             core.startGroup("Install MicroStack");
@@ -127,8 +131,8 @@ async function run() {
             await exec.exec("juju add-credential microstack --client -f /tmp/credentials.json");
             core.endGroup();
             // note (rgildein): remove image-stream=daily
-            bootstrap_command = bootstrap_command.replace(" --model-default image-stream=daily", "");
-            bootstrap_command = `${bootstrap_command} --bootstrap-series=${os_series} --metadata-source=/tmp/simplestreams --model-default network=test --model-default external-network=external --bootstrap-constraints=\"allocate-public-ip=true\"`
+            bootstrap_command = `${bootstrap_command} --bootstrap-series=${os_series} --metadata-source=/tmp/simplestreams --model-default network=test --model-default external-network=external`
+            bootstrap_constraints = `${bootstrap_constraints} allocate-public-ip=true`
         } else if (credentials_yaml != "") {
 	    const options: exec.ExecOptions = {}
 	    options.silent = true;
@@ -144,7 +148,12 @@ async function run() {
         }
 
         core.startGroup("Bootstrap controller");
-        await exec.exec(bootstrap_command);
+        bootstrap_command = `${bootstrap_command} --bootstrap-constraints="${bootstrap_constraints}"`
+        if (group !== "") {
+            await exec.exec('sg', [group, '-c', bootstrap_command]);
+        } else {
+            await exec.exec(bootstrap_command);
+        }
         core.endGroup();
         if (provider === "microk8s") {
             core.startGroup("Post-bootstrap");
