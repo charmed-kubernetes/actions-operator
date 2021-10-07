@@ -83,6 +83,7 @@ async function run() {
         await exec.exec("sudo snap install jq");
         await exec.exec("sudo snap install charm --classic");
         await exec.exec("sudo snap install charmcraft --classic");
+        await exec.exec("sudo snap install juju-bundle --classic");
         core.endGroup();
         let bootstrap_command = `juju bootstrap --debug --verbose ${provider} ${bootstrap_options}`
         if (provider === "lxd") {
@@ -165,6 +166,13 @@ async function run() {
             core.endGroup();
         }
         core.exportVariable('CONTROLLER_NAME', controller_name);
+        core.startGroup("Install kubectl");
+        if (provider === "microk8s") {
+            await exec.exec("sudo snap alias microk8s.kubectl kubectl");
+        } else {
+            await exec.exec("sudo snap install kubectl --classic");
+        }
+        core.endGroup();
     } catch(error) {
         core.setFailed(error.message);
     }
