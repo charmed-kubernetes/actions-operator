@@ -1751,7 +1751,7 @@ function run() {
             yield exec.exec("sudo snap install kubectl --classic");
             yield exec.exec("mkdir", ["-p", `${HOME}/.kube`]);
             if (provider === "microk8s") {
-                yield exec.exec(`microk8s config > ${HOME}/.kube/config`);
+                yield exec_as_microk8s(`microk8s config > ${HOME}/.kube/config`);
             }
             core.endGroup();
         }

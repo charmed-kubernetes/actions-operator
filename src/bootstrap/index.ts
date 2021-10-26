@@ -170,7 +170,7 @@ async function run() {
         await exec.exec("sudo snap install kubectl --classic");
         await exec.exec("mkdir", ["-p", `${HOME}/.kube`]);
         if (provider === "microk8s") {
-            await exec.exec(`microk8s config > ${HOME}/.kube/config`);
+            await exec_as_microk8s(`microk8s config > ${HOME}/.kube/config`);
         }
         core.endGroup();
     } catch(error) {
