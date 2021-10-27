@@ -167,10 +167,10 @@ async function run() {
         }
         core.exportVariable('CONTROLLER_NAME', controller_name);
         core.startGroup("Install kubectl");
+        await exec.exec("sudo snap install kubectl --classic");
+        await exec.exec("mkdir", ["-p", `${HOME}/.kube`]);
         if (provider === "microk8s") {
-            await exec.exec("sudo snap alias microk8s.kubectl kubectl");
-        } else {
-            await exec.exec("sudo snap install kubectl --classic");
+            await exec_as_microk8s(`microk8s config > ${HOME}/.kube/config`);
         }
         core.endGroup();
     } catch(error) {
