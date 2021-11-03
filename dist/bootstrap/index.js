@@ -1699,30 +1699,43 @@ function exec_as_microk8s(cmd, options = {}) {
         return yield exec.exec('sg', ['microk8s', '-c', cmd], options);
     });
 }
+function retry_until_zero_rc(cmd, maxRetries, timeout) {
+    return __awaiter(this, void 0, void 0, function* () {
+        for (let i = 0; i < maxRetries; i++) {
+            let rc = yield exec_as_microk8s(cmd, ignoreFail);
+            if (rc == 0) {
+                return true;
+            }
+            core.info(`Command ${cmd} failed with return code ${rc}. Will retry after ${timeout}ms`);
+            yield new Promise(resolve => setTimeout(resolve, timeout));
+        }
+        core.error(`Command ${cmd} failed ${maxRetries} times, giving up`);
+        return false;
+    });
+}
 function microk8s_init() {
     return __awaiter(this, void 0, void 0, function* () {
         // microk8s needs some additional things done to ensure it's ready for Juju.
         yield exec_as_microk8s("microk8s status --wait-ready");
         yield exec_as_microk8s("microk8s enable storage dns rbac");
         // workarounds for https://bugs.launchpad.net/juju/+bug/1937282
-        yield exec_as_microk8s("microk8s kubectl -n kube-system rollout status deployment/coredns");
-        yield exec_as_microk8s("microk8s kubectl -n kube-system rollout status deployment/hostpath-provisioner");
-        yield exec_as_microk8s("microk8s kubectl create serviceaccount test-sa");
-        let rc = 0;
-        console.log("Waiting for test SA token...");
-        for (let i = 0; i < 12; i++) {
-            rc = yield exec_as_microk8s("microk8s kubectl get secrets | grep -q test-sa-token-", ignoreFail);
-            if (rc == 0) {
-                break;
-            }
-            if (i == 12) {
-                core.setFailed("Timed out waiting for test SA token");
-                return false;
-            }
-            // sleep 10s
-            yield new Promise(resolve => setTimeout(resolve, 10000));
+        if (!(yield retry_until_zero_rc("microk8s kubectl -n kube-system rollout status deployment/coredns", 12, 10000))) {
+            core.setFailed("Timed out waiting for CoreDNS");
+            return false;
         }
-        console.log("Found test SA token; removing");
+        ;
+        if (!(yield retry_until_zero_rc("microk8s kubectl -n kube-system rollout status deployment/hostpath-provisioner", 12, 10000))) {
+            core.setFailed("Timed out waiting for Storage");
+            return false;
+        }
+        ;
+        yield exec_as_microk8s("microk8s kubectl create serviceaccount test-sa");
+        if (!(yield retry_until_zero_rc("microk8s kubectl get secrets | grep -q test-sa-token-", 12, 10000))) {
+            core.setFailed("Timed out waiting for test SA token");
+            return false;
+        }
+        ;
+        core.info("Found test SA token; removing");
         yield exec_as_microk8s("microk8s kubectl delete serviceaccount test-sa");
         return true;
     });
