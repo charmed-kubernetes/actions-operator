@@ -51,6 +51,9 @@ async function run() {
     const extra_bootstrap_options = core.getInput("bootstrap-options");
     const controller_name = `github-pr-${GITHUB_SHA}`;
     const bootstrap_options = `${controller_name} --model-default test-mode=true --model-default automatically-retry-hooks=false --model-default logging-config="<root>=DEBUG" ${extra_bootstrap_options}`;
+    const charm_channel = core.getInput("charm_channel");
+    const charmcraft_channel = core.getInput("charmcraft_channel");
+    const juju_channel = core.getInput("juju_channel");
     let bootstrap_constraints = "cores=2 mem=4G";
     let group = "";
     try {
@@ -81,9 +84,9 @@ async function run() {
         core.endGroup();
         core.startGroup("Install tools");
         await exec.exec("sudo snap install jq");
-        await exec.exec("sudo snap install charm --classic");
-        await exec.exec("sudo snap install charmcraft --classic");
-        await exec.exec("sudo snap install juju-bundle --classic");
+        await exec.exec("sudo snap install charm --classic --channel=${charm_channel}");
+        await exec.exec("sudo snap install charmcraft --channel=${charmcraft_channel}");
+        await exec.exec("sudo snap install juju-bundle --channel=${juju_channel}");
         core.endGroup();
         let bootstrap_command = `juju bootstrap --debug --verbose ${provider} ${bootstrap_options}`
         if (provider === "lxd") {
