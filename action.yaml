@@ -24,6 +24,22 @@ inputs:
     description: "Additional options to pass to the bootstrap."
     required: false
     default: ""
+  charm-channel:
+    description: "snap channel for charm, installed via snap"
+    required: false
+    default: "latest/stable"
+  charmcraft-channel:
+    description: "snap channel for charmcraft, installed via snap"
+    required: false
+    default: "latest/stable"
+  juju-channel:
+    description: "snap channel for juju, installed via snap"
+    required: false
+    default: "latest/stable"
+  juju-bundle-channel:
+    description: "snap channel for juju bundle, installed via snap"
+    required: false
+    default: "latest/stable"
 runs:
   using: "node12"
   main: "dist/bootstrap/index.js"
