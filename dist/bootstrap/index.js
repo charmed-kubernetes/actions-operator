@@ -1773,8 +1773,8 @@ function run() {
             core.startGroup("Install tools");
             yield exec.exec("sudo snap install jq");
             yield exec.exec(`sudo snap install charm --classic --channel=${charm_channel}`);
-            yield exec.exec(`sudo snap install charmcraft --channel=${charmcraft_channel}`);
-            yield exec.exec(`sudo snap install juju-bundle --channel=${juju_bundle_channel}`);
+            yield exec.exec(`sudo snap install charmcraft --classic --channel=${charmcraft_channel}`);
+            yield exec.exec(`sudo snap install juju-bundle --classic --channel=${juju_bundle_channel}`);
             core.endGroup();
             let bootstrap_command = `juju bootstrap --debug --verbose ${provider} ${bootstrap_options}`;
             if (provider === "lxd") {
