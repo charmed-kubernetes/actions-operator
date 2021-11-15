@@ -1751,10 +1751,10 @@ function run() {
         const extra_bootstrap_options = core.getInput("bootstrap-options");
         const controller_name = `github-pr-${GITHUB_SHA}`;
         const bootstrap_options = `${controller_name} --model-default test-mode=true --model-default automatically-retry-hooks=false --model-default logging-config="<root>=DEBUG" ${extra_bootstrap_options}`;
-        const charm_channel = core.getInput("charm_channel");
-        const charmcraft_channel = core.getInput("charmcraft_channel");
-        const juju_channel = core.getInput("juju_channel");
-        const juju_bundle_channel = core.getInput("juju_bundle_channel");
+        const charm_channel = core.getInput("charm-channel");
+        const charmcraft_channel = core.getInput("charmcraft-channel");
+        const juju_channel = core.getInput("juju-channel");
+        const juju_bundle_channel = core.getInput("juju-bundle-channel");
         let bootstrap_constraints = "cores=2 mem=4G";
         let group = "";
         try {
