@@ -66,6 +66,7 @@ async function run() {
     const charmcraft_channel = core.getInput("charmcraft-channel");
     const juju_channel = core.getInput("juju-channel");
     const juju_bundle_channel = core.getInput("juju-bundle-channel");
+    const lxd_channel = core.getInput("lxd-channel");
     let bootstrap_constraints = "cores=2 mem=4G";
     let group = "";
     try {
@@ -77,7 +78,12 @@ async function run() {
         // LXD is now a pre-req for building any charm with charmcraft
         core.startGroup("Install LXD");
         await exec.exec("sudo apt-get remove -qy lxd lxd-client", [], ignoreFail);
-        await exec.exec("sudo snap install lxd");
+        // Informational
+        await exec.exec("sudo snap list lxd", [], ignoreFail);
+        // Install LXD -- If it's installed, rc=0 and a warning about using snap refresh appears
+        await exec.exec(`sudo snap install lxd --channel=${lxd_channel}`);
+        // Refresh LXD to the desired channel
+        await exec.exec(`sudo snap refresh lxd --channel=${lxd_channel}`);
         core.endGroup();
         core.startGroup("Initialize LXD");
         await exec.exec("sudo lxd waitready");
@@ -102,17 +108,17 @@ async function run() {
         core.endGroup();
         let bootstrap_command = `juju bootstrap --debug --verbose ${provider} ${bootstrap_options}`
         if (provider === "lxd") {
-	    if (channel !== null){
-		await exec.exec(`sudo snap refresh lxd --channel=${channel}`);
-	    }
+            if (channel !== null){
+                await exec.exec(`sudo snap refresh lxd --channel=${channel}`);
+	        }
             group = "lxd";
         } else if (provider === "microk8s") {
             core.startGroup("Install microk8s");
-	    if (channel !== null){
-		await exec.exec(`sudo snap install microk8s --classic --channel=${channel}`);
-	    } else {
-            	await exec.exec("sudo snap install microk8s --classic");
-	    }
+            if (channel !== null){
+                await exec.exec(`sudo snap install microk8s --classic --channel=${channel}`);
+            } else {
+                await exec.exec("sudo snap install microk8s --classic");
+            }
             core.endGroup();
             core.startGroup("Initialize microk8s");
             await exec.exec('bash', ['-c', 'sudo usermod -a -G microk8s $USER']);
@@ -126,11 +132,11 @@ async function run() {
             core.startGroup("Install MicroStack");
             let os_series = "focal";
             let os_region = "microstack";
-	    if (channel !== null){
+    	    if (channel !== null){
             	await exec.exec(`sudo snap install microstack --beta --devmode --channel=${channel}`);
-	    } else {
+	        } else {
             	await exec.exec("sudo snap install microstack --beta --devmode");
-	    }
+	        }
             await exec.exec("sudo snap alias microstack.openstack openstack");
             core.endGroup();
             core.startGroup("Initialize MicroStack");
@@ -150,8 +156,8 @@ async function run() {
             bootstrap_command = `${bootstrap_command} --bootstrap-series=${os_series} --metadata-source=/tmp/simplestreams --model-default network=test --model-default external-network=external`
             bootstrap_constraints = `${bootstrap_constraints} allocate-public-ip=true`
         } else if (credentials_yaml != "") {
-	    const options: exec.ExecOptions = {}
-	    options.silent = true;
+	        const options: exec.ExecOptions = {}
+	        options.silent = true;
             const juju_dir = `${HOME}/.local/share/juju`;
             await exec.exec("mkdir", ["-p", juju_dir], options);
             await exec.exec("bash", ["-c", `echo "${credentials_yaml}" | base64 -d > ${juju_dir}/credentials.yaml`], options);

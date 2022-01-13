@@ -1755,6 +1755,7 @@ function run() {
         const charmcraft_channel = core.getInput("charmcraft-channel");
         const juju_channel = core.getInput("juju-channel");
         const juju_bundle_channel = core.getInput("juju-bundle-channel");
+        const lxd_channel = core.getInput("lxd-channel");
         let bootstrap_constraints = "cores=2 mem=4G";
         let group = "";
         try {
@@ -1766,7 +1767,12 @@ function run() {
             // LXD is now a pre-req for building any charm with charmcraft
             core.startGroup("Install LXD");
             yield exec.exec("sudo apt-get remove -qy lxd lxd-client", [], ignoreFail);
-            yield exec.exec("sudo snap install lxd");
+            // Informational
+            yield exec.exec("sudo snap list lxd", [], ignoreFail);
+            // Install LXD -- If it's installed, rc=0 and a warning about using snap refresh appears
+            yield exec.exec(`sudo snap install lxd --channel=${lxd_channel}`);
+            // Refresh LXD to the desired channel
+            yield exec.exec(`sudo snap refresh lxd --channel=${lxd_channel}`);
             core.endGroup();
             core.startGroup("Initialize LXD");
             yield exec.exec("sudo lxd waitready");
