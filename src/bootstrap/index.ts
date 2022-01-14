@@ -108,13 +108,13 @@ async function run() {
         core.endGroup();
         let bootstrap_command = `juju bootstrap --debug --verbose ${provider} ${bootstrap_options}`
         if (provider === "lxd") {
-            if (channel !== null){
+            if ([null, ""].includes(channel) == false){
                 await exec.exec(`sudo snap refresh lxd --channel=${channel}`);
 	        }
             group = "lxd";
         } else if (provider === "microk8s") {
             core.startGroup("Install microk8s");
-            if (channel !== null){
+            if ([null, ""].includes(channel) == false){
                 await exec.exec(`sudo snap install microk8s --classic --channel=${channel}`);
             } else {
                 await exec.exec("sudo snap install microk8s --classic");
@@ -132,7 +132,7 @@ async function run() {
             core.startGroup("Install MicroStack");
             let os_series = "focal";
             let os_region = "microstack";
-    	    if (channel !== null){
+    	    if ([null, ""].includes(channel) == false){
             	await exec.exec(`sudo snap install microstack --beta --devmode --channel=${channel}`);
 	        } else {
             	await exec.exec("sudo snap install microstack --beta --devmode");
