@@ -66,6 +66,7 @@ async function run() {
     const charmcraft_channel = core.getInput("charmcraft-channel");
     const juju_channel = core.getInput("juju-channel");
     const juju_bundle_channel = core.getInput("juju-bundle-channel");
+    const juju_crashdump_channel = core.getInput("juju-crashdump-channel")
     const lxd_channel = core.getInput("lxd-channel");
     let bootstrap_constraints = "cores=2 mem=4G";
     let group = "";
@@ -105,6 +106,7 @@ async function run() {
         await exec.exec(`sudo snap install charm --classic --channel=${charm_channel}`);
         await exec.exec(`sudo snap install charmcraft --classic --channel=${charmcraft_channel}`);
         await exec.exec(`sudo snap install juju-bundle --classic --channel=${juju_bundle_channel}`);
+        await exec.exec(`sudo snap install juju-crashdump --classic --channel=${juju_crashdump_channel}`)
         core.endGroup();
         let bootstrap_command = `juju bootstrap --debug --verbose ${provider} ${bootstrap_options}`
         if (provider === "lxd") {
