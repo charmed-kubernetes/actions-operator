@@ -44,6 +44,10 @@ inputs:
     description: "snap channel for lxd regardless of provider, installed via snap"
     required: false
     default: "latest/stable"
+  juju-crashdump-channel:
+    description: "snap channel for juju-crashdump, installed via snap"
+    required: false
+    default: "latest/stable"
 runs:
   using: "node12"
   main: "dist/bootstrap/index.js"
