@@ -56,6 +56,10 @@ inputs:
     description: "microk8s group name"
     required: false
     default: ""
+  microk8s-addons:
+    description: "microk8s addons to enable"
+    required: false
+    default: "storage dns rbac"
 runs:
   using: "node16"
   main: "dist/bootstrap/index.js"
