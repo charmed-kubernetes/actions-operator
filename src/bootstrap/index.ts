@@ -28,10 +28,12 @@ async function retry_until_rc(cmd: string, expected_rc=0, maxRetries=12, timeout
     return false;
 }
 
-async function microk8s_init() {
+async function microk8s_init(addons) {
     // microk8s needs some additional things done to ensure it's ready for Juju.
+    // Add the given addons.If not were given, enable the default ones.
+    addons = addons || "storage dns rbac"
     await exec_as_microk8s("microk8s status --wait-ready");
-    await exec_as_microk8s("microk8s enable storage dns rbac");
+    await exec_as_microk8s("microk8s enable " + addons);
     let stdout_buf = '';
     const options = {
         listeners: {
@@ -82,6 +84,7 @@ async function run() {
     const juju_crashdump_channel = core.getInput("juju-crashdump-channel")
     const lxd_channel = core.getInput("lxd-channel");
     let bootstrap_constraints = core.getInput("bootstrap-constraints");
+    const microk8s_addons = core.getInput("microk8s-addons")
     let group = "";
     try {
         core.addPath('/snap/bin');
@@ -137,7 +140,7 @@ async function run() {
             core.endGroup();
             core.startGroup("Initialize microk8s");
             await exec.exec('bash', ['-c', 'sudo usermod -a -G microk8s $USER']);
-            if(!await microk8s_init()) {
+            if(!await microk8s_init(microk8s_addons)) {
                 return;
             }
             group = "microk8s";

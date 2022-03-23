@@ -4829,11 +4829,13 @@ function retry_until_rc(cmd, expected_rc = 0, maxRetries = 12, timeout = 10000) 
         return false;
     });
 }
-function microk8s_init() {
+function microk8s_init(addons) {
     return __awaiter(this, void 0, void 0, function* () {
         // microk8s needs some additional things done to ensure it's ready for Juju.
+        // Add the given addons.If not were given, enable the default ones.
+        addons = addons || "storage dns rbac";
         yield exec_as_microk8s("microk8s status --wait-ready");
-        yield exec_as_microk8s("microk8s enable storage dns rbac");
+        yield exec_as_microk8s("microk8s enable " + addons);
         let stdout_buf = '';
         const options = {
             listeners: {
@@ -4885,6 +4887,7 @@ function run() {
         const juju_crashdump_channel = core.getInput("juju-crashdump-channel");
         const lxd_channel = core.getInput("lxd-channel");
         let bootstrap_constraints = core.getInput("bootstrap-constraints");
+        const microk8s_addons = core.getInput("microk8s-addons");
         let group = "";
         try {
             core.addPath('/snap/bin');
@@ -4942,7 +4945,7 @@ function run() {
                 core.endGroup();
                 core.startGroup("Initialize microk8s");
                 yield exec.exec('bash', ['-c', 'sudo usermod -a -G microk8s $USER']);
-                if (!(yield microk8s_init())) {
+                if (!(yield microk8s_init(microk8s_addons))) {
                     return;
                 }
                 group = "microk8s";

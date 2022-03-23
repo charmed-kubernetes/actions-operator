@@ -52,6 +52,10 @@ inputs:
     description: "snap channel for juju-crashdump, installed via snap"
     required: false
     default: "latest/stable"
+  microk8s-addons:
+    description: "microk8s addons to enable"
+    required: false
+    default: "storage dns rbac"
 runs:
   using: "node12"
   main: "dist/bootstrap/index.js"
