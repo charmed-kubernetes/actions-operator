@@ -18,7 +18,6 @@ jobs:
           reporter: github-pr-check
           fail-on-error: true
 
-
   test-lxd:
     runs-on: ubuntu-latest
     name: Test lxd environment
