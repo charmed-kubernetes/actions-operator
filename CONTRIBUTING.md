@@ -1,7 +1,7 @@
 # Contributor Guide
 
 This GitHub Action is open source ([Apache License 2.0](./LICENSE)) and we
-actively seek any community contibutions for code, suggestions and
+actively seek any community contributions for code, suggestions and
 documentation.  This page details a few notes, workflows and suggestions for
 how to make contributions most effective and help us all build a better workflow -
 please give them a read before working on any contributions.

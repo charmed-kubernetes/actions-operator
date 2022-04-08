@@ -68,7 +68,7 @@ async function run() {
     const juju_bundle_channel = core.getInput("juju-bundle-channel");
     const juju_crashdump_channel = core.getInput("juju-crashdump-channel")
     const lxd_channel = core.getInput("lxd-channel");
-    let bootstrap_constraints = "cores=2 mem=4G";
+    let bootstrap_constraints = core.getInput("bootstrap-constraints");
     let group = "";
     try {
         core.addPath('/snap/bin');
