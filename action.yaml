@@ -21,9 +21,13 @@ inputs:
     required: false
     default: ""
   bootstrap-options:
-    description: "Additional options to pass to the bootstrap."
+    description: "Additional options to pass to the bootstrap excluding constraints."
     required: false
     default: ""
+  bootstrap-constraints:
+    description: "Additional options to pass as bootstrap constraints."
+    required: false
+    default: "cores=2 mem=4G"
   charm-channel:
     description: "snap channel for charm, installed via snap"
     required: false
