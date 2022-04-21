@@ -1740,6 +1740,40 @@ function microk8s_init() {
         return true;
     });
 }
+function add_microstack_as_cloud() {
+    return __awaiter(this, void 0, void 0, function* () {
+        let clouds = `
+    clouds:
+      microstack: 
+        type: openstack
+        auth-types: [access-key,userpass]
+        regions:
+          microstack:
+            endpoint: $OS_AUTH_URL
+        ca-certificates: 
+        - |
+          $(sed '2,$s/^/          /' $OS_CACERT)`;
+        yield exec.exec("bash", ["-c", `source /var/snap/microstack/common/etc/microstack.rc && echo "${clouds}" > /tmp/microstack.yaml`]);
+        yield exec.exec("juju add-cloud microstack --client -f /tmp/microstack.yaml");
+    });
+}
+function add_microstack_credentials() {
+    return __awaiter(this, void 0, void 0, function* () {
+        let credentials = `
+    credentials:
+      microstack:
+        admin:
+          auth-type: userpass
+          username: $OS_USERNAME
+          password: $OS_PASSWORD
+          project-domain-name: $OS_PROJECT_DOMAIN_NAME
+          tenant-name: $OS_PROJECT_NAME
+          user-domain-name: $OS_USER_DOMAIN_NAME
+          version: '$OS_IDENTITY_API_VERSION'`;
+        yield exec.exec("bash", ["-c", `source /var/snap/microstack/common/etc/microstack.rc && echo "${credentials}" > /tmp/microstack_credentials.yaml`]);
+        yield exec.exec("juju add-credential microstack --client -f /tmp/microstack_credentials.yaml");
+    });
+}
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
         const HOME = process.env["HOME"];
@@ -1841,11 +1875,9 @@ function run() {
                 yield exec.exec("sudo sysctl net.ipv4.ip_forward=1");
                 yield exec.exec("bash", ["-c", `curl http://cloud-images.ubuntu.com/${os_series}/current/${os_series}-server-cloudimg-amd64.img | openstack image create --public --container-format=bare --disk-format=qcow2 ${os_series}`]);
                 yield exec.exec("mkdir -p /tmp/simplestreams");
-                yield exec.exec("bash", ["-c", `juju metadata generate-image -d /tmp/simplestreams -s ${os_series} -i "$(openstack image show ${os_series} -f value -c id)" -r ${os_region} -u http://10.20.20.1:5000/v3`]);
-                yield exec.exec("bash", ["-c", "echo '{clouds: {microstack: {type: openstack, auth-types: [access-key,userpass], regions: {microstack: {endpoint: http://10.20.20.1:5000/v3}}}}}' > /tmp/clouds.json"]);
-                yield exec.exec("juju add-cloud microstack --client -f /tmp/clouds.json");
-                yield exec.exec("bash", ["-c", 'source /var/snap/microstack/common/etc/microstack.rc && echo "{credentials: {microstack: {admin: {auth-type: userpass, username: $OS_USERNAME, password: $OS_PASSWORD, project-domain-name: $OS_PROJECT_DOMAIN_NAME, tenant-name: $OS_PROJECT_NAME, user-domain-name: $OS_USER_DOMAIN_NAME, version: \'$OS_IDENTITY_API_VERSION\'}}}}" > /tmp/credentials.json']);
-                yield exec.exec("juju add-credential microstack --client -f /tmp/credentials.json");
+                yield exec.exec("bash", ["-c", `source /var/snap/microstack/common/etc/microstack.rc && juju metadata generate-image -d /tmp/simplestreams -s ${os_series} -i "$(openstack image show ${os_series} -f value -c id)" -r ${os_region} -u $OS_AUTH_URL`]);
+                yield add_microstack_as_cloud();
+                yield add_microstack_credentials();
                 core.endGroup();
                 // note (rgildein): remove image-stream=daily
                 bootstrap_command = `${bootstrap_command} --bootstrap-series=${os_series} --metadata-source=/tmp/simplestreams --model-default network=test --model-default external-network=external`;
