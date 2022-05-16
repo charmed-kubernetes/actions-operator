@@ -1,5 +1,6 @@
 import * as core from '@actions/core';
 import * as exec from '@actions/exec';
+import semver from 'semver';
 
 declare var process : {
     env: {
@@ -31,6 +32,13 @@ async function microk8s_init() {
     // microk8s needs some additional things done to ensure it's ready for Juju.
     await exec_as_microk8s("microk8s status --wait-ready");
     await exec_as_microk8s("microk8s enable storage dns rbac");
+    let uk8sVer = '';
+    const options = {
+        listeners: {
+            stdout: (data) => { uk8sVer += data.toString() }
+        }
+    };
+    await exec_as_microk8s("snap list microk8s | grep microk8s | awk '{ print $2 }'", options);
 
     // workarounds for https://bugs.launchpad.net/juju/+bug/1937282
     if (! await retry_until_zero_rc("microk8s kubectl -n kube-system rollout status deployment/coredns", 12, 10000)) {
@@ -41,13 +49,15 @@ async function microk8s_init() {
         core.setFailed("Timed out waiting for Storage");
         return false;
     };
-    await exec_as_microk8s("microk8s kubectl create serviceaccount test-sa");
-    if (! await retry_until_zero_rc("microk8s kubectl get secrets | grep -q test-sa-token-", 12, 10000)) {
-        core.setFailed("Timed out waiting for test SA token");
-        return false;
-    };
-    core.info("Found test SA token; removing");
-    await exec_as_microk8s("microk8s kubectl delete serviceaccount test-sa");
+    if (semver.lt(uk8sVer, '1.24.0')) {
+        await exec_as_microk8s("microk8s kubectl create serviceaccount test-sa");
+        if (! await retry_until_zero_rc("microk8s kubectl get secrets | grep -q test-sa-token-", 12, 10000)) {
+            core.setFailed("Timed out waiting for test SA token");
+            return false;
+        };
+        core.info("Found test SA token; removing");
+        await exec_as_microk8s("microk8s kubectl delete serviceaccount test-sa");
+    }
     return true;
 }
 
