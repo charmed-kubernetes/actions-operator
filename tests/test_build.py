@@ -9,7 +9,7 @@ async def test_build(ops_test):
             "git",
             "clone",
             "https://github.com/juju-solutions/charm-ubuntu.git",
-            "/tmp/charm-ubuntu",
+            "/home/ubuntu/charm-ubuntu",
         ]
     )
-    await ops_test.build_charm("/tmp/charm-ubuntu")
+    await ops_test.build_charm("/home/ubuntu/charm-ubuntu")
