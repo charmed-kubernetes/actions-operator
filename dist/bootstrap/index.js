@@ -4815,11 +4815,11 @@ function exec_as_microk8s(cmd, options = {}) {
         return yield exec.exec('sg', ['microk8s', '-c', cmd], options);
     });
 }
-function retry_until_zero_rc(cmd, maxRetries, timeout) {
+function retry_until_rc(cmd, expected_rc = 0, maxRetries = 12, timeout = 10000) {
     return __awaiter(this, void 0, void 0, function* () {
         for (let i = 0; i < maxRetries; i++) {
             let rc = yield exec_as_microk8s(cmd, ignoreFail);
-            if (rc == 0) {
+            if (rc == expected_rc) {
                 return true;
             }
             core.info(`Command ${cmd} failed with return code ${rc}. Will retry after ${timeout}ms`);
@@ -4834,27 +4834,27 @@ function microk8s_init() {
         // microk8s needs some additional things done to ensure it's ready for Juju.
         yield exec_as_microk8s("microk8s status --wait-ready");
         yield exec_as_microk8s("microk8s enable storage dns rbac");
-        let uk8sVer = '';
+        let stdout_buf = '';
         const options = {
             listeners: {
-                stdout: (data) => { uk8sVer += data.toString(); }
+                stdout: (data) => { stdout_buf += data.toString(); }
             }
         };
         yield exec_as_microk8s("snap list microk8s | grep microk8s | awk '{ print $2 }'", options);
         // workarounds for https://bugs.launchpad.net/juju/+bug/1937282
-        if (!(yield retry_until_zero_rc("microk8s kubectl -n kube-system rollout status deployment/coredns", 12, 10000))) {
+        if (!(yield retry_until_rc("microk8s kubectl -n kube-system rollout status deployment/coredns"))) {
             core.setFailed("Timed out waiting for CoreDNS");
             return false;
         }
         ;
-        if (!(yield retry_until_zero_rc("microk8s kubectl -n kube-system rollout status deployment/hostpath-provisioner", 12, 10000))) {
+        if (!(yield retry_until_rc("microk8s kubectl -n kube-system rollout status deployment/hostpath-provisioner"))) {
             core.setFailed("Timed out waiting for Storage");
             return false;
         }
         ;
-        if (semver_1.default.lt(uk8sVer, '1.24.0')) {
+        if (semver_1.default.lt(stdout_buf, '1.24.0')) {
             yield exec_as_microk8s("microk8s kubectl create serviceaccount test-sa");
-            if (!(yield retry_until_zero_rc("microk8s kubectl get secrets | grep -q test-sa-token-", 12, 10000))) {
+            if (!(yield retry_until_rc("microk8s kubectl get secrets | grep -q test-sa-token-"))) {
                 core.setFailed("Timed out waiting for test SA token");
                 return false;
             }
@@ -4862,6 +4862,8 @@ function microk8s_init() {
             core.info("Found test SA token; removing");
             yield exec_as_microk8s("microk8s kubectl delete serviceaccount test-sa");
         }
+        yield retry_until_rc("microk8s kubectl auth can-i create pods");
+        yield retry_until_rc("microk8s kubectl auth can-i create pods --as=me", 1);
         return true;
     });
 }
