@@ -38,13 +38,18 @@ jobs:
   test-microk8s:
     runs-on: ubuntu-latest
     name: Test microk8s environment
+    strategy:
+      matrix:
+        channel: 
+          - 1.23/stable
+          - latest/stable
     steps:
       - name: Check out code
         uses: actions/checkout@v2
       - uses: ./
         with:
           provider: microk8s
-          channel: latest/stable
+          channel: ${{ matrix.channel }}
 
       - name: Run Tests
         run: |
