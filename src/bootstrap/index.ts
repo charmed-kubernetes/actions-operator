@@ -10,7 +10,7 @@ declare var process : {
 
 const ignoreFail: exec.ExecOptions = {"ignoreReturnCode": true}
 
-async function os_release() {
+const os_release = async () => {
     // Read os-release file into an object
     let stdout_buf = '';
     const options = {
@@ -21,13 +21,13 @@ async function os_release() {
     await exec.exec('cat', ['/etc/os-release'], options);
     let data: { [name:string]: string} = {};
     stdout_buf.split('\n').forEach(function(line){
-        let [key, value] = line.split("=", 1);
+        let [key, value] = line.split("=", 2);
         data[key] = value
     })
     return data
 }
 
-async function docker_lxd_clash(){
+const docker_lxd_clash = async () => {
     // Work-around clash between docker and lxd on jammy
     // https://github.com/docker/for-linux/issues/1034
     await exec.exec(`sudo iptables -F FORWARD`)

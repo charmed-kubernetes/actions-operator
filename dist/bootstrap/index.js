@@ -4810,32 +4810,28 @@ const core = __importStar(__nccwpck_require__(2186));
 const exec = __importStar(__nccwpck_require__(1514));
 const semver_1 = __importDefault(__nccwpck_require__(1383));
 const ignoreFail = { "ignoreReturnCode": true };
-function os_release() {
-    return __awaiter(this, void 0, void 0, function* () {
-        // Read os-release file into an object
-        let stdout_buf = '';
-        const options = {
-            listeners: {
-                stdout: (data) => { stdout_buf += data.toString(); }
-            }
-        };
-        yield exec.exec('cat', ['/etc/os-release'], options);
-        let data = {};
-        stdout_buf.split('\n').forEach(function (line) {
-            let [key, value] = line.split("=", 1);
-            data[key] = value;
-        });
-        return data;
+const os_release = () => __awaiter(void 0, void 0, void 0, function* () {
+    // Read os-release file into an object
+    let stdout_buf = '';
+    const options = {
+        listeners: {
+            stdout: (data) => { stdout_buf += data.toString(); }
+        }
+    };
+    yield exec.exec('cat', ['/etc/os-release'], options);
+    let data = {};
+    stdout_buf.split('\n').forEach(function (line) {
+        let [key, value] = line.split("=", 2);
+        data[key] = value;
     });
-}
-function docker_lxd_clash() {
-    return __awaiter(this, void 0, void 0, function* () {
-        // Work-around clash between docker and lxd on jammy
-        // https://github.com/docker/for-linux/issues/1034
-        yield exec.exec(`sudo iptables -F FORWARD`);
-        yield exec.exec(`sudo iptables -P FORWARD ACCEPT`);
-    });
-}
+    return data;
+});
+const docker_lxd_clash = () => __awaiter(void 0, void 0, void 0, function* () {
+    // Work-around clash between docker and lxd on jammy
+    // https://github.com/docker/for-linux/issues/1034
+    yield exec.exec(`sudo iptables -F FORWARD`);
+    yield exec.exec(`sudo iptables -P FORWARD ACCEPT`);
+});
 function exec_as_microk8s(cmd, options = {}) {
     return __awaiter(this, void 0, void 0, function* () {
         return yield exec.exec('sg', ['microk8s', '-c', cmd], options);
