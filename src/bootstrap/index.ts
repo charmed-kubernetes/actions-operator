@@ -10,6 +10,30 @@ declare var process : {
 
 const ignoreFail: exec.ExecOptions = {"ignoreReturnCode": true}
 
+const os_release = async () => {
+    // Read os-release file into an object
+    let stdout_buf = '';
+    const options = {
+        listeners: {
+            stdout: (data: Buffer) => { stdout_buf += data.toString() }
+        }
+    };
+    await exec.exec('cat', ['/etc/os-release'], options);
+    let data: { [name:string]: string} = {};
+    stdout_buf.split('\n').forEach(function(line){
+        let [key, value] = line.split("=", 2);
+        data[key] = value
+    })
+    return data
+}
+
+const docker_lxd_clash = async () => {
+    // Work-around clash between docker and lxd on jammy
+    // https://github.com/docker/for-linux/issues/1034
+    await exec.exec(`sudo iptables -F FORWARD`)
+    await exec.exec(`sudo iptables -P FORWARD ACCEPT`)
+}
+
 async function exec_as_microk8s(cmd: string, options = {}) {
     return await exec.exec('sg', ['microk8s', '-c', cmd], options);
 }
@@ -120,6 +144,12 @@ async function run() {
         await exec.exec(`sudo snap install charmcraft --classic --channel=${charmcraft_channel}`);
         await exec.exec(`sudo snap install juju-bundle --classic --channel=${juju_bundle_channel}`);
         await exec.exec(`sudo snap install juju-crashdump --classic --channel=${juju_crashdump_channel}`)
+
+        const release = await os_release();
+        if (release["VERSION_CODENAME"].includes("jammy")){
+            await docker_lxd_clash();
+        }
+
         core.endGroup();
         let bootstrap_command = `juju bootstrap --debug --verbose ${provider} ${bootstrap_options}`
         if (provider === "lxd") {
