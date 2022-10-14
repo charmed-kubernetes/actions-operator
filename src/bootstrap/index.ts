@@ -166,7 +166,13 @@ async function run() {
             }
             core.endGroup();
             core.startGroup("Initialize microk8s");
-            await exec.exec('bash', ['-c', 'sudo usermod -a -G microk8s $USER']);
+
+            if (channel.includes('strict')){
+                await exec.exec('bash', ['-c', 'sudo usermod -a -G snap_microk8s $USER']);
+            } else {
+                await exec.exec('bash', ['-c', 'sudo usermod -a -G microk8s $USER']);
+            }
+
             if(!await microk8s_init()) {
                 return;
             }
