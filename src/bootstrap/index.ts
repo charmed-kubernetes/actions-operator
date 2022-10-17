@@ -217,7 +217,7 @@ async function run() {
         }
 
         core.startGroup("Bootstrap controller");
-        bootstrap_command = `${bootstrap_command} --bootstrap-constraints="${bootstrap_constraints}"`
+        bootstrap_command = `sudo -E ${bootstrap_command} --bootstrap-constraints="${bootstrap_constraints}"`
         if (group !== "") {
             await exec.exec('sg', [group, '-c', bootstrap_command]);
         } else {
