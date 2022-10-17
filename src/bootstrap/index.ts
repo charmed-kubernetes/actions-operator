@@ -35,7 +35,8 @@ const docker_lxd_clash = async () => {
 }
 
 async function exec_as_microk8s(cmd: string, options = {}) {
-    return await exec.exec('sg', ['microk8s', '-c', cmd], options);
+    const microk8s_group = core.getInput("microk8s-group");
+    return await exec.exec(microk8s_group, ['microk8s', '-c', cmd], options);
 }
 
 async function retry_until_rc(cmd: string, expected_rc=0, maxRetries=12, timeout=10000) {

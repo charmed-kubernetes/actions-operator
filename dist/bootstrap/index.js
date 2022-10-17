@@ -4834,7 +4834,8 @@ const docker_lxd_clash = () => __awaiter(void 0, void 0, void 0, function* () {
 });
 function exec_as_microk8s(cmd, options = {}) {
     return __awaiter(this, void 0, void 0, function* () {
-        return yield exec.exec('sg', ['microk8s', '-c', cmd], options);
+        const microk8s_group = core.getInput("microk8s-group");
+        return yield exec.exec(microk8s_group, ['microk8s', '-c', cmd], options);
     });
 }
 function retry_until_rc(cmd, expected_rc = 0, maxRetries = 12, timeout = 10000) {
