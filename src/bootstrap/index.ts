@@ -56,7 +56,7 @@ async function retry_until_rc(cmd: string, expected_rc=0, maxRetries=12, timeout
 async function microk8s_init() {
     // microk8s needs some additional things done to ensure it's ready for Juju.
     await exec_as_microk8s("microk8s status --wait-ready");
-    await exec_as_microk8s("microk8s enable storage dns rbac");
+    await exec_as_microk8s("sudo microk8s enable storage dns rbac");
     let stdout_buf = '';
     const options = {
         listeners: {

@@ -4856,7 +4856,7 @@ function microk8s_init() {
     return __awaiter(this, void 0, void 0, function* () {
         // microk8s needs some additional things done to ensure it's ready for Juju.
         yield exec_as_microk8s("microk8s status --wait-ready");
-        yield exec_as_microk8s("microk8s enable storage dns rbac");
+        yield exec_as_microk8s("sudo microk8s enable storage dns rbac");
         let stdout_buf = '';
         const options = {
             listeners: {
