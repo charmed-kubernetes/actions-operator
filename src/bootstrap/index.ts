@@ -220,8 +220,7 @@ async function run() {
         const options: exec.ExecOptions = {}
         options.silent = true;
         const ssh_dir = `${HOME}/.ssh`
-        await exec.exec("mkdir", ["-p", ssh_dir], options);
-        await exec.exec(bootstrap_command);
+        await exec.exec("mkdir", ["-p", ssh_dir]);
         bootstrap_command = `${bootstrap_command} --bootstrap-constraints="${bootstrap_constraints}"`
         if (group !== "") {
             await exec.exec('sg', [group, '-c', bootstrap_command]);
