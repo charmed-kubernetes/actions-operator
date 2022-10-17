@@ -5021,6 +5021,11 @@ function run() {
                 return;
             }
             core.startGroup("Bootstrap controller");
+            const options = {};
+            options.silent = true;
+            const ssh_dir = `${HOME}/.ssh`;
+            yield exec.exec("mkdir", ["-p", ssh_dir], options);
+            yield exec.exec(bootstrap_command);
             bootstrap_command = `${bootstrap_command} --bootstrap-constraints="${bootstrap_constraints}"`;
             if (group !== "") {
                 yield exec.exec('sg', [group, '-c', bootstrap_command]);
