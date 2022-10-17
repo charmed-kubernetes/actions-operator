@@ -171,7 +171,7 @@ async function run() {
             if(!await microk8s_init()) {
                 return;
             }
-            group = "microk8s";
+            group = microk8s_group;
             bootstrap_constraints = "";
             core.endGroup();
         } else if (provider === "microstack") {

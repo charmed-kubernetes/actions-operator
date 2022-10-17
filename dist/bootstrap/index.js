@@ -4972,7 +4972,7 @@ function run() {
                 if (!(yield microk8s_init())) {
                     return;
                 }
-                group = "microk8s";
+                group = microk8s_group;
                 bootstrap_constraints = "";
                 core.endGroup();
             }
