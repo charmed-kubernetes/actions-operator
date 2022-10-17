@@ -4962,10 +4962,10 @@ function run() {
             else if (provider === "microk8s") {
                 core.startGroup("Install microk8s");
                 if ([null, ""].includes(channel) == false) {
-                    yield exec.exec(`sudo snap install microk8s --classic --channel=${channel}`);
+                    yield exec.exec(`sudo snap install microk8s --channel=${channel}`);
                 }
                 else {
-                    yield exec.exec("sudo snap install microk8s --classic");
+                    yield exec.exec("sudo snap install microk8s");
                 }
                 core.endGroup();
                 core.startGroup("Initialize microk8s");
@@ -5021,7 +5021,7 @@ function run() {
                 return;
             }
             core.startGroup("Bootstrap controller");
-            bootstrap_command = `sudo ${bootstrap_command} --bootstrap-constraints="${bootstrap_constraints}"`;
+            bootstrap_command = `${bootstrap_command} --bootstrap-constraints="${bootstrap_constraints}"`;
             if (group !== "") {
                 yield exec.exec('sg', [group, '-c', bootstrap_command]);
             }
@@ -5035,7 +5035,7 @@ function run() {
                 // Tests using pytest-operator will create their own model, but for those that don't, we
                 // shouldn't leave them with the controller potentially conflicting with things they add
                 // to the model.
-                yield exec_as_microk8s("sudo juju add-model testing");
+                yield exec_as_microk8s("juju add-model testing");
                 core.endGroup();
             }
             core.exportVariable('CONTROLLER_NAME', controller_name);
