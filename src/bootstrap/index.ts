@@ -217,9 +217,10 @@ async function run() {
         }
 
         core.startGroup("Bootstrap controller");
-        bootstrap_command = `sudo -E ${bootstrap_command} --bootstrap-constraints="${bootstrap_constraints}"`
+        bootstrap_command = `${bootstrap_command} --bootstrap-constraints="${bootstrap_constraints}"`
         if (group !== "") {
-            await exec.exec('sg', [group, '-c', bootstrap_command]);
+            // await exec.exec('sg', [group, '-c', bootstrap_command]);
+            await exec.exec(bootstrap_command);
         } else {
             await exec.exec(bootstrap_command);
         }
@@ -230,7 +231,7 @@ async function run() {
             // Tests using pytest-operator will create their own model, but for those that don't, we
             // shouldn't leave them with the controller potentially conflicting with things they add
             // to the model.
-            await exec_as_microk8s("sudo -E juju add-model testing")
+            await exec.exec("juju add-model testing")
             core.endGroup();
         }
         core.exportVariable('CONTROLLER_NAME', controller_name);
