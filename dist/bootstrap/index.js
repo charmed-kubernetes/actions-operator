@@ -5035,7 +5035,7 @@ function run() {
                 // Tests using pytest-operator will create their own model, but for those that don't, we
                 // shouldn't leave them with the controller potentially conflicting with things they add
                 // to the model.
-                yield exec_as_microk8s("juju add-model testing");
+                yield exec_as_microk8s("sudo -E juju add-model testing");
                 core.endGroup();
             }
             core.exportVariable('CONTROLLER_NAME', controller_name);
