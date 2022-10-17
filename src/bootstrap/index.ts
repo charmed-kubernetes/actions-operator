@@ -221,6 +221,8 @@ async function run() {
         options.silent = true;
         const ssh_dir = `${HOME}/.ssh`
         await exec.exec("mkdir", ["-p", ssh_dir]);
+        const juju_dir = `${HOME}/.local/share/juju`;
+        await exec.exec("mkdir", ["-p", juju_dir]);
         bootstrap_command = `${bootstrap_command} --bootstrap-constraints="${bootstrap_constraints}"`
         if (group !== "") {
             await exec.exec('sg', [group, '-c', bootstrap_command]);
