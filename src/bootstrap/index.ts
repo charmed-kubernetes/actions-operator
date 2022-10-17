@@ -162,9 +162,9 @@ async function run() {
         } else if (provider === "microk8s") {
             core.startGroup("Install microk8s");
             if ([null, ""].includes(channel) == false){
-                await exec.exec(`sudo snap install microk8s --channel=${channel}`);
+                await exec.exec(`sudo snap install microk8s --classic --channel=${channel}`);
             } else {
-                await exec.exec("sudo snap install microk8s");
+                await exec.exec("sudo snap install --classic microk8s");
             }
             core.endGroup();
             core.startGroup("Initialize microk8s");

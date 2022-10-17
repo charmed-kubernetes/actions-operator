@@ -4962,10 +4962,10 @@ function run() {
             else if (provider === "microk8s") {
                 core.startGroup("Install microk8s");
                 if ([null, ""].includes(channel) == false) {
-                    yield exec.exec(`sudo snap install microk8s --channel=${channel}`);
+                    yield exec.exec(`sudo snap install microk8s --classic --channel=${channel}`);
                 }
                 else {
-                    yield exec.exec("sudo snap install microk8s");
+                    yield exec.exec("sudo snap install --classic microk8s");
                 }
                 core.endGroup();
                 core.startGroup("Initialize microk8s");
