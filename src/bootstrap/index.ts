@@ -219,8 +219,7 @@ async function run() {
         core.startGroup("Bootstrap controller");
         bootstrap_command = `${bootstrap_command} --bootstrap-constraints="${bootstrap_constraints}"`
         if (group !== "") {
-            // await exec.exec('sg', [group, '-c', bootstrap_command]);
-            await exec.exec(bootstrap_command);
+            await exec.exec('sg', [group, '-c', bootstrap_command]);
         } else {
             await exec.exec(bootstrap_command);
         }

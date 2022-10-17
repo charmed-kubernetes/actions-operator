@@ -5023,8 +5023,7 @@ function run() {
             core.startGroup("Bootstrap controller");
             bootstrap_command = `${bootstrap_command} --bootstrap-constraints="${bootstrap_constraints}"`;
             if (group !== "") {
-                // await exec.exec('sg', [group, '-c', bootstrap_command]);
-                yield exec.exec(bootstrap_command);
+                yield exec.exec('sg', [group, '-c', bootstrap_command]);
             }
             else {
                 yield exec.exec(bootstrap_command);
