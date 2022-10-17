@@ -105,6 +105,7 @@ async function run() {
     const juju_bundle_channel = core.getInput("juju-bundle-channel");
     const juju_crashdump_channel = core.getInput("juju-crashdump-channel")
     const lxd_channel = core.getInput("lxd-channel");
+    const microk8s_group = core.getInput("microk8s-group");
     let bootstrap_constraints = core.getInput("bootstrap-constraints");
     let group = "";
     try {
@@ -166,7 +167,7 @@ async function run() {
             }
             core.endGroup();
             core.startGroup("Initialize microk8s");
-            await exec.exec('bash', ['-c', 'sudo usermod -a -G microk8s $USER']);
+            await exec.exec('bash', ['-c', `sudo usermod -a -G ${microk8s_group} $USER`]);
             if(!await microk8s_init()) {
                 return;
             }
