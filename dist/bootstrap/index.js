@@ -4832,9 +4832,26 @@ const docker_lxd_clash = () => __awaiter(void 0, void 0, void 0, function* () {
     yield exec.exec(`sudo iptables -F FORWARD`);
     yield exec.exec(`sudo iptables -P FORWARD ACCEPT`);
 });
+function get_microk8s_group() {
+    const microk8s_group = core.getInput("microk8s-group");
+    if ([null, ""].includes(microk8s_group)) {
+        // The group was not supplied (defaults to ""), pick a sensible value depending on strictness
+        const channel = core.getInput("channel");
+        if (channel.includes('strict')) {
+            return "snap_microk8s";
+        }
+        else {
+            return "microk8s";
+        }
+    }
+    else {
+        // User specified a group name so return it
+        return microk8s_group;
+    }
+}
 function exec_as_microk8s(cmd, options = {}) {
     return __awaiter(this, void 0, void 0, function* () {
-        const microk8s_group = core.getInput("microk8s-group");
+        const microk8s_group = get_microk8s_group();
         return yield exec.exec('sg', [microk8s_group, '-c', cmd], options);
     });
 }
@@ -4907,7 +4924,7 @@ function run() {
         const juju_bundle_channel = core.getInput("juju-bundle-channel");
         const juju_crashdump_channel = core.getInput("juju-crashdump-channel");
         const lxd_channel = core.getInput("lxd-channel");
-        const microk8s_group = core.getInput("microk8s-group");
+        const microk8s_group = get_microk8s_group();
         let bootstrap_constraints = core.getInput("bootstrap-constraints");
         let group = "";
         try {

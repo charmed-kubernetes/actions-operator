@@ -80,7 +80,6 @@ jobs:
           provider: microk8s
           channel: 1.25-strict/stable
           juju-channel: 3.0/candidate
-          microk8s-group: snap_microk8s
 
       - name: Run Tests
         run: |

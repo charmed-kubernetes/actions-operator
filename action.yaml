@@ -55,7 +55,7 @@ inputs:
   microk8s-group:
     description: "microk8s group name"
     required: false
-    default: "microk8s"
+    default: ""
 runs:
   using: "node12"
   main: "dist/bootstrap/index.js"

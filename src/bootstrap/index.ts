@@ -34,8 +34,25 @@ const docker_lxd_clash = async () => {
     await exec.exec(`sudo iptables -P FORWARD ACCEPT`)
 }
 
-async function exec_as_microk8s(cmd: string, options = {}) {
+function get_microk8s_group() {
     const microk8s_group = core.getInput("microk8s-group");
+    if ([null, ""].includes(microk8s_group)) {
+        // The group was not supplied (defaults to ""), pick a sensible value depending on strictness
+        const channel = core.getInput("channel");
+        if (channel.includes('strict')) {
+            return "snap_microk8s"
+        } else {
+            return "microk8s"
+        }
+    } else {
+        // User specified a group name so return it
+        return microk8s_group
+    }
+}
+
+
+async function exec_as_microk8s(cmd: string, options = {}) {
+    const microk8s_group = get_microk8s_group();
     return await exec.exec('sg', [microk8s_group, '-c', cmd], options);
 }
 
@@ -89,6 +106,7 @@ async function microk8s_init() {
     return true;
 }
 
+
 async function run() {
     const HOME = process.env["HOME"]
     const GITHUB_SHA = process.env["GITHUB_SHA"].slice(0, 5)
@@ -106,7 +124,7 @@ async function run() {
     const juju_bundle_channel = core.getInput("juju-bundle-channel");
     const juju_crashdump_channel = core.getInput("juju-crashdump-channel")
     const lxd_channel = core.getInput("lxd-channel");
-    const microk8s_group = core.getInput("microk8s-group");
+    const microk8s_group = get_microk8s_group();
     let bootstrap_constraints = core.getInput("bootstrap-constraints");
     let group = "";
     try {
