@@ -164,7 +164,7 @@ async function run() {
             if ([null, ""].includes(channel) == false){
                 await exec.exec(`sudo snap install microk8s --classic --channel=${channel}`);
             } else {
-                await exec.exec("sudo snap install --classic microk8s");
+                await exec.exec("sudo snap install microk8s --classic");
             }
             core.endGroup();
             core.startGroup("Initialize microk8s");
@@ -236,7 +236,7 @@ async function run() {
             // Tests using pytest-operator will create their own model, but for those that don't, we
             // shouldn't leave them with the controller potentially conflicting with things they add
             // to the model.
-            await exec.exec("juju add-model testing")
+            await exec_as_microk8s("juju add-model testing")
             core.endGroup();
         }
         core.exportVariable('CONTROLLER_NAME', controller_name);
