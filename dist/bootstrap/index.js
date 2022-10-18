@@ -4952,6 +4952,12 @@ function run() {
                 yield docker_lxd_clash();
             }
             core.endGroup();
+            // If using a strictly confined Juju, it wont be able to create the juju directory itself
+            // Prevent issues by creating it manually ahead of bootstrap
+            const options = {};
+            options.silent = true;
+            const juju_dir = `${HOME}/.local/share/juju`;
+            yield exec.exec("mkdir", ["-p", juju_dir]);
             let bootstrap_command = `juju bootstrap --debug --verbose ${provider} ${bootstrap_options}`;
             if (provider === "lxd") {
                 if ([null, ""].includes(channel) == false) {
@@ -5007,10 +5013,6 @@ function run() {
                 bootstrap_constraints = `${bootstrap_constraints} allocate-public-ip=true`;
             }
             else if (credentials_yaml != "") {
-                const options = {};
-                options.silent = true;
-                const juju_dir = `${HOME}/.local/share/juju`;
-                yield exec.exec("mkdir", ["-p", juju_dir], options);
                 yield exec.exec("bash", ["-c", `echo "${credentials_yaml}" | base64 -d > ${juju_dir}/credentials.yaml`], options);
                 if (clouds_yaml != "") {
                     yield exec.exec("bash", ["-c", `echo "${clouds_yaml}" | base64 -d > ${juju_dir}/clouds.yaml`], options);
@@ -5021,12 +5023,6 @@ function run() {
                 return;
             }
             core.startGroup("Bootstrap controller");
-            const options = {};
-            options.silent = true;
-            const ssh_dir = `${HOME}/.ssh`;
-            yield exec.exec("mkdir", ["-p", ssh_dir]);
-            const juju_dir = `${HOME}/.local/share/juju`;
-            yield exec.exec("mkdir", ["-p", juju_dir]);
             bootstrap_command = `${bootstrap_command} --bootstrap-constraints="${bootstrap_constraints}"`;
             if (group !== "") {
                 yield exec.exec('sg', [group, '-c', bootstrap_command]);
