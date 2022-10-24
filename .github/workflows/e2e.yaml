@@ -78,7 +78,7 @@ jobs:
         with:
           provider: microk8s
           channel: 1.25-strict/stable
-          juju-channel: 3.0/candidate
+          juju-channel: 3.0/stable
 
       - name: Run Tests
         run: |
