@@ -34,8 +34,26 @@ const docker_lxd_clash = async () => {
     await exec.exec(`sudo iptables -P FORWARD ACCEPT`)
 }
 
+function get_microk8s_group() {
+    const microk8s_group = core.getInput("microk8s-group");
+    if ([null, ""].includes(microk8s_group)) {
+        // The group was not supplied (defaults to ""), pick a sensible value depending on strictness
+        const channel = core.getInput("channel");
+        if (channel.includes('strict')) {
+            return "snap_microk8s"
+        } else {
+            return "microk8s"
+        }
+    } else {
+        // User specified a group name so return it
+        return microk8s_group
+    }
+}
+
+
 async function exec_as_microk8s(cmd: string, options = {}) {
-    return await exec.exec('sg', ['microk8s', '-c', cmd], options);
+    const microk8s_group = get_microk8s_group();
+    return await exec.exec('sg', [microk8s_group, '-c', cmd], options);
 }
 
 async function retry_until_rc(cmd: string, expected_rc=0, maxRetries=12, timeout=10000) {
@@ -55,7 +73,7 @@ async function retry_until_rc(cmd: string, expected_rc=0, maxRetries=12, timeout
 async function microk8s_init() {
     // microk8s needs some additional things done to ensure it's ready for Juju.
     await exec_as_microk8s("microk8s status --wait-ready");
-    await exec_as_microk8s("microk8s enable storage dns rbac");
+    await exec_as_microk8s("sudo microk8s enable storage dns rbac");
     let stdout_buf = '';
     const options = {
         listeners: {
@@ -88,6 +106,7 @@ async function microk8s_init() {
     return true;
 }
 
+
 async function run() {
     const HOME = process.env["HOME"]
     const GITHUB_SHA = process.env["GITHUB_SHA"].slice(0, 5)
@@ -105,6 +124,7 @@ async function run() {
     const juju_bundle_channel = core.getInput("juju-bundle-channel");
     const juju_crashdump_channel = core.getInput("juju-crashdump-channel")
     const lxd_channel = core.getInput("lxd-channel");
+    const microk8s_group = get_microk8s_group();
     let bootstrap_constraints = core.getInput("bootstrap-constraints");
     let group = "";
     try {
@@ -151,6 +171,12 @@ async function run() {
         }
 
         core.endGroup();
+        // If using a strictly confined Juju, it wont be able to create the juju directory itself
+        // Prevent issues by creating it manually ahead of bootstrap
+        const options: exec.ExecOptions = {}
+        options.silent = true;
+        const juju_dir = `${HOME}/.local/share/juju`;
+        await exec.exec("mkdir", ["-p", juju_dir]);
         let bootstrap_command = `juju bootstrap --debug --verbose ${provider} ${bootstrap_options}`
         if (provider === "lxd") {
             if ([null, ""].includes(channel) == false){
@@ -166,11 +192,11 @@ async function run() {
             }
             core.endGroup();
             core.startGroup("Initialize microk8s");
-            await exec.exec('bash', ['-c', 'sudo usermod -a -G microk8s $USER']);
+            await exec.exec('bash', ['-c', `sudo usermod -a -G ${microk8s_group} $USER`]);
             if(!await microk8s_init()) {
                 return;
             }
-            group = "microk8s";
+            group = microk8s_group;
             bootstrap_constraints = "";
             core.endGroup();
         } else if (provider === "microstack") {
@@ -201,10 +227,6 @@ async function run() {
             bootstrap_command = `${bootstrap_command} --bootstrap-series=${os_series} --metadata-source=/tmp/simplestreams --model-default network=test --model-default external-network=external`
             bootstrap_constraints = `${bootstrap_constraints} allocate-public-ip=true`
         } else if (credentials_yaml != "") {
-	        const options: exec.ExecOptions = {}
-	        options.silent = true;
-            const juju_dir = `${HOME}/.local/share/juju`;
-            await exec.exec("mkdir", ["-p", juju_dir], options);
             await exec.exec("bash", ["-c", `echo "${credentials_yaml}" | base64 -d > ${juju_dir}/credentials.yaml`], options);
             if (clouds_yaml != "" ) {
                 await exec.exec("bash", ["-c", `echo "${clouds_yaml}" | base64 -d > ${juju_dir}/clouds.yaml`], options);

@@ -4832,9 +4832,27 @@ const docker_lxd_clash = () => __awaiter(void 0, void 0, void 0, function* () {
     yield exec.exec(`sudo iptables -F FORWARD`);
     yield exec.exec(`sudo iptables -P FORWARD ACCEPT`);
 });
+function get_microk8s_group() {
+    const microk8s_group = core.getInput("microk8s-group");
+    if ([null, ""].includes(microk8s_group)) {
+        // The group was not supplied (defaults to ""), pick a sensible value depending on strictness
+        const channel = core.getInput("channel");
+        if (channel.includes('strict')) {
+            return "snap_microk8s";
+        }
+        else {
+            return "microk8s";
+        }
+    }
+    else {
+        // User specified a group name so return it
+        return microk8s_group;
+    }
+}
 function exec_as_microk8s(cmd, options = {}) {
     return __awaiter(this, void 0, void 0, function* () {
-        return yield exec.exec('sg', ['microk8s', '-c', cmd], options);
+        const microk8s_group = get_microk8s_group();
+        return yield exec.exec('sg', [microk8s_group, '-c', cmd], options);
     });
 }
 function retry_until_rc(cmd, expected_rc = 0, maxRetries = 12, timeout = 10000) {
@@ -4855,7 +4873,7 @@ function microk8s_init() {
     return __awaiter(this, void 0, void 0, function* () {
         // microk8s needs some additional things done to ensure it's ready for Juju.
         yield exec_as_microk8s("microk8s status --wait-ready");
-        yield exec_as_microk8s("microk8s enable storage dns rbac");
+        yield exec_as_microk8s("sudo microk8s enable storage dns rbac");
         let stdout_buf = '';
         const options = {
             listeners: {
@@ -4906,6 +4924,7 @@ function run() {
         const juju_bundle_channel = core.getInput("juju-bundle-channel");
         const juju_crashdump_channel = core.getInput("juju-crashdump-channel");
         const lxd_channel = core.getInput("lxd-channel");
+        const microk8s_group = get_microk8s_group();
         let bootstrap_constraints = core.getInput("bootstrap-constraints");
         let group = "";
         try {
@@ -4950,6 +4969,12 @@ function run() {
                 yield docker_lxd_clash();
             }
             core.endGroup();
+            // If using a strictly confined Juju, it wont be able to create the juju directory itself
+            // Prevent issues by creating it manually ahead of bootstrap
+            const options = {};
+            options.silent = true;
+            const juju_dir = `${HOME}/.local/share/juju`;
+            yield exec.exec("mkdir", ["-p", juju_dir]);
             let bootstrap_command = `juju bootstrap --debug --verbose ${provider} ${bootstrap_options}`;
             if (provider === "lxd") {
                 if ([null, ""].includes(channel) == false) {
@@ -4967,11 +4992,11 @@ function run() {
                 }
                 core.endGroup();
                 core.startGroup("Initialize microk8s");
-                yield exec.exec('bash', ['-c', 'sudo usermod -a -G microk8s $USER']);
+                yield exec.exec('bash', ['-c', `sudo usermod -a -G ${microk8s_group} $USER`]);
                 if (!(yield microk8s_init())) {
                     return;
                 }
-                group = "microk8s";
+                group = microk8s_group;
                 bootstrap_constraints = "";
                 core.endGroup();
             }
@@ -5005,10 +5030,6 @@ function run() {
                 bootstrap_constraints = `${bootstrap_constraints} allocate-public-ip=true`;
             }
             else if (credentials_yaml != "") {
-                const options = {};
-                options.silent = true;
-                const juju_dir = `${HOME}/.local/share/juju`;
-                yield exec.exec("mkdir", ["-p", juju_dir], options);
                 yield exec.exec("bash", ["-c", `echo "${credentials_yaml}" | base64 -d > ${juju_dir}/credentials.yaml`], options);
                 if (clouds_yaml != "") {
                     yield exec.exec("bash", ["-c", `echo "${clouds_yaml}" | base64 -d > ${juju_dir}/clouds.yaml`], options);
