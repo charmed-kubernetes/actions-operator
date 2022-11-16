@@ -57,7 +57,7 @@ inputs:
     required: false
     default: ""
 runs:
-  using: "node12"
+  using: "node16"
   main: "dist/bootstrap/index.js"
   post: "dist/cleanup/index.js"
 branding:
