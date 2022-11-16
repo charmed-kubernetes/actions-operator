@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check out code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: woke
         uses: canonical-web-and-design/inclusive-naming@main
         with:
@@ -28,7 +28,7 @@ jobs:
           - ubuntu-22.04
     steps:
       - name: Check out code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - uses: ./
         with:
           provider: lxd
@@ -53,7 +53,7 @@ jobs:
           - latest/stable
     steps:
       - name: Check out code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - uses: ./
         with:
           provider: microk8s
@@ -73,7 +73,7 @@ jobs:
           - ubuntu-22.04
     steps:
       - name: Check out code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - uses: ./
         with:
           provider: microk8s
@@ -89,7 +89,7 @@ jobs:
     name: Test microstack environment
     steps:
       - name: Check out code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - uses: ./
         with:
           provider: microstack
@@ -103,7 +103,7 @@ jobs:
     name: Test vSphere environment
     steps:
       - name: Check out code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - uses: ./
         with:
           provider: vsphere
