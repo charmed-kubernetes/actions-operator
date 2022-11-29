@@ -48,7 +48,7 @@ jobs:
         os:
           - ubuntu-20.04
           - ubuntu-22.04
-        channel: 
+        channel:
           - 1.23/stable
           - latest/stable
     steps:
@@ -79,6 +79,26 @@ jobs:
           provider: microk8s
           channel: 1.25-strict/stable
           juju-channel: 3.0/stable
+
+      - name: Run Tests
+        run: |
+          tox -e tests -- -k "not machine"
+
+  test-microk8s-addons:
+    name: Test microk8s addons option
+    runs-on: ubuntu-22.04
+    strategy:
+      matrix:
+        addons:
+          - ""
+          - []
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v3
+      - uses: ./
+        with:
+          provider: microk8s
+          microk8s-addons: ${{ matrix.addons }}
 
       - name: Run Tests
         run: |

@@ -72,10 +72,11 @@ async function retry_until_rc(cmd: string, expected_rc=0, maxRetries=12, timeout
 
 async function microk8s_init(addons) {
     // microk8s needs some additional things done to ensure it's ready for Juju.
-    // Add the given addons.If not were given, enable the default ones.
-    addons = addons || "storage dns rbac"
+    // Add the given addons if any were given.
     await exec_as_microk8s("microk8s status --wait-ready");
-    await exec_as_microk8s("sudo microk8s enable " + addons);
+    if (addons) {
+        await exec_as_microk8s("sudo microk8s enable " + addons);
+    }
     let stdout_buf = '';
     const options = {
         listeners: {
