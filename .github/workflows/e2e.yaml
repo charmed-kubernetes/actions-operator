@@ -84,25 +84,34 @@ jobs:
         run: |
           tox -e tests -- -k "not machine"
 
-  test-microk8s-addons:
-    name: Test microk8s addons option
+  test-microk8s-default-addons:
+    name: Test default addons are enabled by microk8s provider.
     runs-on: ubuntu-22.04
-    strategy:
-      matrix:
-        addons:
-          - ""
-          - []
     steps:
       - name: Check out code
         uses: actions/checkout@v3
       - uses: ./
         with:
           provider: microk8s
-          microk8s-addons: ${{ matrix.addons }}
 
       - name: Run Tests
         run: |
-          tox -e tests -- -k "not machine"
+          tox -e tests -- -k "addons" --addons "storage dns rbac"
+
+  test-microk8s-empty-addons:
+    name: Test passing empty addon list to microk8s provider.
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v3
+      - uses: ./
+        with:
+          provider: microk8s
+          microk8s-addons: ""
+
+      - name: Run Tests
+        run: |
+          tox -e tests -- -k "addons" --addons ""
 
   test-microstack:
     runs-on: self-hosted
