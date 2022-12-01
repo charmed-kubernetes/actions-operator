@@ -31,5 +31,6 @@ async def test_addons(addons: str):
         ["sudo", "microk8s", "status", "--format", "yaml"], capture_output=True
     )
     status = yaml.safe_load(result.stdout)
+    assert status is not None, f"microk8s status = {result}"
     status = status["addons"]
     verify_enabled(status, addons)
