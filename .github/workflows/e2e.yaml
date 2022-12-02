@@ -98,21 +98,6 @@ jobs:
         run: |
           tox -e tests -- -k "addons" --addons "storage dns rbac"
 
-  test-microk8s-empty-addons:
-    name: Test passing empty addon list to microk8s provider.
-    runs-on: ubuntu-22.04
-    steps:
-      - name: Check out code
-        uses: actions/checkout@v3
-      - uses: ./
-        with:
-          provider: microk8s
-          microk8s-addons: ""
-
-      - name: Run Tests
-        run: |
-          tox -e tests -- -k "addons" --addons ""
-
   test-microstack:
     runs-on: self-hosted
     name: Test microstack environment

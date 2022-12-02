@@ -28,7 +28,7 @@ async def test_addons(addons: str):
     addons = set(addons)
     addons = set.union(addons, default_addons)
     result = run(
-        ["microk8s", "status", "--format", "yaml"], capture_output=True
+        ["sudo", "microk8s", "status", "--format", "yaml"], capture_output=True
     )
     status = yaml.safe_load(result.stdout)
     status = status["addons"]
