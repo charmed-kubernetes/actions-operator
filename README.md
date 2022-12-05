@@ -71,8 +71,7 @@ dns, storage and rbac. You can override these defaults with the following:
           provider: microk8s
           microk8s-addons: "storage dns rbac registry"
 ```
-An empty string in place of the addons, such as `microk8s-addons: ""`, will 
-result in no add-ons being enabled.
+Currently, if specific addons are defined, a minimum set of addons (the defaults) `dns, storage, rbac` must be enabled for the action to work properly.. 
 
 ## pytest-operator
 
