@@ -56,6 +56,22 @@ jobs:
           clouds-yaml: ${{ secrets.CLOUDS_YAML }}
           bootstrap-options: "--model-default datastore=my-datastore"
 ```
+## microk8s provider
+Using the microk8s provider some default add-ons will be enabled - specifically 
+dns, storage and rbac. You can override these defaults with the following:
+
+```yaml
+  add-on-test:
+    runs-on: ubuntu-latest
+    name: Testing custom addons
+    steps:
+      - name: Setup operator environment
+        uses: charmed-kubernetes/actions-operator@main
+        with:
+          provider: microk8s
+          microk8s-addons: "storage dns rbac registry"
+```
+Currently, if specific addons are defined, a minimum set of addons (the defaults) `dns, storage, rbac` must be enabled for the action to work properly.. 
 
 ## pytest-operator
 
