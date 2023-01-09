@@ -29,7 +29,7 @@ async function run() {
     try {
         if (controller_name) {
             core.addPath('/snap/bin');
-            if (provider !== "microk8s") {
+            if (!["microk8s", "lxd"].includes(provider)) {
                 await exec.exec(`juju destroy-controller -y ${controller_name} --destroy-all-models --destroy-storage`);
             }
             if (provider === "microstack") {
