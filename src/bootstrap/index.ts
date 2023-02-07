@@ -1,7 +1,6 @@
 import * as core from '@actions/core';
 import * as exec from '@actions/exec';
 import { retryAsyncDecorator } from 'ts-retry/lib/cjs/retry/utils';
-import { createExponetialDelay } from 'ts-retry/lib/cjs/retry/utils/delay'
 import semver from 'semver';
 
 declare var process : {
@@ -112,14 +111,20 @@ async function microk8s_init(addons) {
 }
 
 
-const _retryable_exec = (command: string, maxTry: number = 5) => {
+const _retryable_exec = (command: string, initial: number = 10, maxTry: number = 5) => {
     // returns an async method capable of running the prog with sudo
     const fn = async (cmd_arg:string, args?: string[], options?: exec.ExecOptions): Promise<number> => {
         // Run a command with sudo yielding the awaited Promise result
         return await exec.exec(`sudo ${command} ${cmd_arg}`, args, options);
     };
-    const backoff = createExponetialDelay(100);
-    return retryAsyncDecorator(fn, {delay: backoff, maxTry: maxTry})
+    // exponential backoff using initial=10, maxTry=5
+    //    10ms
+    //    100ms
+    //    1s
+    //    10s
+    //    100s
+    const backoff = (param) => param.lastDelay !== undefined ? param.lastDelay * initial : initial;
+    return retryAsyncDecorator(fn, {delay: backoff, maxTry: maxTry});
 };
 const snap = _retryable_exec("snap");
 const apt_get = _retryable_exec("apt-get");

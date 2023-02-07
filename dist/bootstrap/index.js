@@ -4576,38 +4576,6 @@ Object.defineProperty(exports, "retryAsyncDecorator", ({ enumerable: true, get: 
 
 /***/ }),
 
-/***/ 7151:
-/***/ ((__unused_webpack_module, exports) => {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.createRandomDelay = exports.createMutiplicableDelay = exports.createExponetialDelay = void 0;
-function createExponetialDelay(initialDelay) {
-    const delay = ({ lastDelay }) => lastDelay !== undefined ? lastDelay * initialDelay : initialDelay;
-    return delay;
-}
-exports.createExponetialDelay = createExponetialDelay;
-function createMutiplicableDelay(initialDelay, multiplicator) {
-    const delay = ({ currentTry }) => {
-        if (currentTry === 1) {
-            return initialDelay;
-        }
-        const actualMultiplicator = (currentTry - 1) * multiplicator;
-        return initialDelay * actualMultiplicator;
-    };
-    return delay;
-}
-exports.createMutiplicableDelay = createMutiplicableDelay;
-function createRandomDelay(min, max) {
-    const multiplicator = max - min + 1;
-    return () => Math.floor(Math.random() * multiplicator + min);
-}
-exports.createRandomDelay = createRandomDelay;
-
-
-/***/ }),
-
 /***/ 2828:
 /***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
 
@@ -5476,7 +5444,6 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 const core = __importStar(__nccwpck_require__(2186));
 const exec = __importStar(__nccwpck_require__(1514));
 const utils_1 = __nccwpck_require__(2828);
-const delay_1 = __nccwpck_require__(7151);
 const semver_1 = __importDefault(__nccwpck_require__(1383));
 const ignoreFail = { "ignoreReturnCode": true };
 const os_release = () => __awaiter(void 0, void 0, void 0, function* () {
@@ -5579,13 +5546,19 @@ function microk8s_init(addons) {
         return true;
     });
 }
-const _retryable_exec = (command, maxTry = 5) => {
+const _retryable_exec = (command, initial = 10, maxTry = 5) => {
     // returns an async method capable of running the prog with sudo
     const fn = (cmd_arg, args, options) => __awaiter(void 0, void 0, void 0, function* () {
         // Run a command with sudo yielding the awaited Promise result
         return yield exec.exec(`sudo ${command} ${cmd_arg}`, args, options);
     });
-    const backoff = delay_1.createExponetialDelay(100);
+    // exponential backoff using initial=10, maxTry=5
+    //    10ms
+    //    100ms
+    //    1s
+    //    10s
+    //    100s
+    const backoff = (param) => param.lastDelay !== undefined ? param.lastDelay * initial : initial;
     return utils_1.retryAsyncDecorator(fn, { delay: backoff, maxTry: maxTry });
 };
 const snap = _retryable_exec("snap");
