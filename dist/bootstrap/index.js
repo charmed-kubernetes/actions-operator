@@ -4576,6 +4576,38 @@ Object.defineProperty(exports, "retryAsyncDecorator", ({ enumerable: true, get: 
 
 /***/ }),
 
+/***/ 7151:
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.createRandomDelay = exports.createMutiplicableDelay = exports.createExponetialDelay = void 0;
+function createExponetialDelay(initialDelay) {
+    const delay = ({ lastDelay }) => lastDelay !== undefined ? lastDelay * initialDelay : initialDelay;
+    return delay;
+}
+exports.createExponetialDelay = createExponetialDelay;
+function createMutiplicableDelay(initialDelay, multiplicator) {
+    const delay = ({ currentTry }) => {
+        if (currentTry === 1) {
+            return initialDelay;
+        }
+        const actualMultiplicator = (currentTry - 1) * multiplicator;
+        return initialDelay * actualMultiplicator;
+    };
+    return delay;
+}
+exports.createMutiplicableDelay = createMutiplicableDelay;
+function createRandomDelay(min, max) {
+    const multiplicator = max - min + 1;
+    return () => Math.floor(Math.random() * multiplicator + min);
+}
+exports.createRandomDelay = createRandomDelay;
+
+
+/***/ }),
+
 /***/ 2828:
 /***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
 
@@ -5444,6 +5476,7 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 const core = __importStar(__nccwpck_require__(2186));
 const exec = __importStar(__nccwpck_require__(1514));
 const utils_1 = __nccwpck_require__(2828);
+const delay_1 = __nccwpck_require__(7151);
 const semver_1 = __importDefault(__nccwpck_require__(1383));
 const ignoreFail = { "ignoreReturnCode": true };
 const os_release = () => __awaiter(void 0, void 0, void 0, function* () {
@@ -5546,11 +5579,17 @@ function microk8s_init(addons) {
         return true;
     });
 }
-const _retryable_snap = (snap_args, args, options) => __awaiter(void 0, void 0, void 0, function* () {
-    // Run a snap command yielding the awaited Promise result
-    return yield exec.exec(`sudo snap ${snap_args}`, args, options);
-});
-const snap = utils_1.retryAsyncDecorator(_retryable_snap, { delay: 100, maxTry: 5 });
+const _retryable_exec = (command, maxTry = 5) => {
+    // returns an async method capable of running the prog with sudo
+    const fn = (cmd_arg, args, options) => __awaiter(void 0, void 0, void 0, function* () {
+        // Run a command with sudo yielding the awaited Promise result
+        return yield exec.exec(`sudo ${command} ${cmd_arg}`, args, options);
+    });
+    const backoff = delay_1.createExponetialDelay(100);
+    return utils_1.retryAsyncDecorator(fn, { delay: backoff, maxTry: maxTry });
+};
+const snap = _retryable_exec("snap");
+const apt_get = _retryable_exec("apt-get");
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
         const HOME = process.env["HOME"];
@@ -5580,7 +5619,7 @@ function run() {
             core.endGroup();
             // LXD is now a pre-req for building any charm with charmcraft
             core.startGroup("Install LXD");
-            yield exec.exec("sudo apt-get remove -qy lxd lxd-client", [], ignoreFail);
+            yield apt_get("remove -qy lxd lxd-client", [], ignoreFail);
             // Informational
             yield snap("list lxd", [], ignoreFail);
             // Install LXD -- If it's installed, rc=0 and a warning about using snap refresh appears
@@ -5596,8 +5635,8 @@ function run() {
             yield exec.exec('bash', ['-c', 'sudo usermod -a -G lxd $USER']);
             core.endGroup();
             core.startGroup("Install tox");
-            yield exec.exec("sudo apt-get update -yqq");
-            yield exec.exec("sudo apt-get install -yqq python3-pip");
+            yield apt_get("update -yqq");
+            yield apt_get("install -yqq python3-pip");
             yield exec.exec("sudo --preserve-env=http_proxy,https_proxy,no_proxy pip3 install tox");
             core.endGroup();
             core.startGroup("Install Juju");

@@ -1,6 +1,7 @@
 import * as core from '@actions/core';
 import * as exec from '@actions/exec';
 import { retryAsyncDecorator } from 'ts-retry/lib/cjs/retry/utils';
+import { createExponetialDelay } from 'ts-retry/lib/cjs/retry/utils/delay'
 import semver from 'semver';
 
 declare var process : {
@@ -111,11 +112,18 @@ async function microk8s_init(addons) {
 }
 
 
-const _retryable_snap = async (snap_args: string, args?: string[], options?: exec.ExecOptions): Promise<number> => {
-    // Run a snap command yielding the awaited Promise result
-    return await exec.exec(`sudo snap ${snap_args}`, args, options);
+const _retryable_exec = (command: string, maxTry: number = 5) => {
+    // returns an async method capable of running the prog with sudo
+    const fn = async (cmd_arg:string, args?: string[], options?: exec.ExecOptions): Promise<number> => {
+        // Run a command with sudo yielding the awaited Promise result
+        return await exec.exec(`sudo ${command} ${cmd_arg}`, args, options);
+    };
+    const backoff = createExponetialDelay(100);
+    return retryAsyncDecorator(fn, {delay: backoff, maxTry: maxTry})
 };
-const snap = retryAsyncDecorator(_retryable_snap, {delay:100, maxTry:5 });
+const snap = _retryable_exec("snap");
+const apt_get = _retryable_exec("apt-get");
+
 
 
 async function run() {
@@ -147,7 +155,7 @@ async function run() {
         core.endGroup();
         // LXD is now a pre-req for building any charm with charmcraft
         core.startGroup("Install LXD");
-        await exec.exec("sudo apt-get remove -qy lxd lxd-client", [], ignoreFail);
+        await apt_get("remove -qy lxd lxd-client", [], ignoreFail);
         // Informational
         await snap("list lxd", [], ignoreFail);
         // Install LXD -- If it's installed, rc=0 and a warning about using snap refresh appears
@@ -163,8 +171,8 @@ async function run() {
         await exec.exec('bash', ['-c', 'sudo usermod -a -G lxd $USER']);
         core.endGroup();
         core.startGroup("Install tox");
-        await exec.exec("sudo apt-get update -yqq");
-        await exec.exec("sudo apt-get install -yqq python3-pip");
+        await apt_get("update -yqq");
+        await apt_get("install -yqq python3-pip");
         await exec.exec("sudo --preserve-env=http_proxy,https_proxy,no_proxy pip3 install tox");
         core.endGroup();
         core.startGroup("Install Juju");
