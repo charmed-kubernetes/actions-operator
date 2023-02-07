@@ -128,3 +128,31 @@ jobs:
       - name: Run Tests
         run: |
           tox -e tests -- -k "not k8s"
+
+  test-microk8s-with-flaky-snap:
+    name: Test microk8s environment with a flaky snap command
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os:
+          - ubuntu-20.04
+          - ubuntu-22.04
+        channel:
+          - latest/stable
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v3
+      # Replace `snap` with something that randomly fails 1/10 executions
+      - name: Replace snap with a flaky snap
+        run: |
+          sudo mv /usr/bin/snap /usr/bin/snap_real
+          sudo mv ./tests/flaky_snap.sh /usr/bin/snap
+          sudo chmod a+x /usr/bin/snap
+      - uses: ./
+        with:
+          provider: microk8s
+          channel: ${{ matrix.channel }}
+
+      - name: Run Tests
+        run: |
+          tox -e tests -- -k "not machine"
