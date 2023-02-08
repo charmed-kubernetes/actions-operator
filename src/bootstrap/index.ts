@@ -1,5 +1,6 @@
 import * as core from '@actions/core';
 import * as exec from '@actions/exec';
+import { retryAsyncDecorator } from 'ts-retry/lib/cjs/retry/utils';
 import semver from 'semver';
 
 declare var process : {
@@ -110,6 +111,26 @@ async function microk8s_init(addons) {
 }
 
 
+const _retryable_exec = (command: string, initial: number = 10, maxTry: number = 5) => {
+    // returns an async method capable of running the prog with sudo
+    const fn = async (cmd_arg:string, args?: string[], options?: exec.ExecOptions): Promise<number> => {
+        // Run a command with sudo yielding the awaited Promise result
+        return await exec.exec(`sudo ${command} ${cmd_arg}`, args, options);
+    };
+    // exponential backoff using initial=10, maxTry=5
+    //    10ms
+    //    100ms
+    //    1s
+    //    10s
+    //    100s
+    const backoff = (param) => param.lastDelay !== undefined ? param.lastDelay * initial : initial;
+    return retryAsyncDecorator(fn, {delay: backoff, maxTry: maxTry});
+};
+const snap = _retryable_exec("snap");
+const apt_get = _retryable_exec("apt-get");
+
+
+
 async function run() {
     const HOME = process.env["HOME"]
     const GITHUB_SHA = process.env["GITHUB_SHA"].slice(0, 5)
@@ -135,17 +156,17 @@ async function run() {
         core.addPath('/snap/bin');
         core.startGroup("Install core snap");
         // This can prevent a udev issue when installing other snaps.
-        await exec.exec("sudo snap install core");
+        await snap("install core");
         core.endGroup();
         // LXD is now a pre-req for building any charm with charmcraft
         core.startGroup("Install LXD");
-        await exec.exec("sudo apt-get remove -qy lxd lxd-client", [], ignoreFail);
+        await apt_get("remove -qy lxd lxd-client", [], ignoreFail);
         // Informational
-        await exec.exec("sudo snap list lxd", [], ignoreFail);
+        await snap("list lxd", [], ignoreFail);
         // Install LXD -- If it's installed, rc=0 and a warning about using snap refresh appears
-        await exec.exec(`sudo snap install lxd --channel=${lxd_channel}`);
+        await snap(`install lxd --channel=${lxd_channel}`);
         // Refresh LXD to the desired channel
-        await exec.exec(`sudo snap refresh lxd --channel=${lxd_channel}`);
+        await snap(`refresh lxd --channel=${lxd_channel}`);
         core.endGroup();
         core.startGroup("Initialize LXD");
         await exec.exec("sudo lxd waitready");
@@ -155,19 +176,19 @@ async function run() {
         await exec.exec('bash', ['-c', 'sudo usermod -a -G lxd $USER']);
         core.endGroup();
         core.startGroup("Install tox");
-        await exec.exec("sudo apt-get update -yqq");
-        await exec.exec("sudo apt-get install -yqq python3-pip");
+        await apt_get("update -yqq");
+        await apt_get("install -yqq python3-pip");
         await exec.exec("sudo --preserve-env=http_proxy,https_proxy,no_proxy pip3 install tox");
         core.endGroup();
         core.startGroup("Install Juju");
-        await exec.exec(`sudo snap install juju --classic --channel=${juju_channel}`);
+        await snap(`install juju --classic --channel=${juju_channel}`);
         core.endGroup();
         core.startGroup("Install tools");
-        await exec.exec("sudo snap install jq");
-        await exec.exec(`sudo snap install charm --classic --channel=${charm_channel}`);
-        await exec.exec(`sudo snap install charmcraft --classic --channel=${charmcraft_channel}`);
-        await exec.exec(`sudo snap install juju-bundle --classic --channel=${juju_bundle_channel}`);
-        await exec.exec(`sudo snap install juju-crashdump --classic --channel=${juju_crashdump_channel}`)
+        await snap("install jq");
+        await snap(`install charm --classic --channel=${charm_channel}`);
+        await snap(`install charmcraft --classic --channel=${charmcraft_channel}`);
+        await snap(`install juju-bundle --classic --channel=${juju_bundle_channel}`);
+        await snap(`install juju-crashdump --classic --channel=${juju_crashdump_channel}`)
 
         const release = await os_release();
         if (release["VERSION_CODENAME"].includes("jammy")){
@@ -184,15 +205,15 @@ async function run() {
         let bootstrap_command = `juju bootstrap --debug --verbose ${provider} ${bootstrap_options}`
         if (provider === "lxd") {
             if ([null, ""].includes(channel) == false){
-                await exec.exec(`sudo snap refresh lxd --channel=${channel}`);
+                await snap(`refresh lxd --channel=${channel}`);
 	        }
             group = "lxd";
         } else if (provider === "microk8s") {
             core.startGroup("Install microk8s");
             if ([null, ""].includes(channel) == false){
-                await exec.exec(`sudo snap install microk8s --classic --channel=${channel}`);
+                await snap(`install microk8s --classic --channel=${channel}`);
             } else {
-                await exec.exec("sudo snap install microk8s --classic");
+                await snap("install microk8s --classic");
             }
             core.endGroup();
             core.startGroup("Initialize microk8s");
@@ -208,11 +229,11 @@ async function run() {
             let os_series = "focal";
             let os_region = "microstack";
     	    if ([null, ""].includes(channel) == false){
-            	await exec.exec(`sudo snap install microstack --beta --devmode --channel=${channel}`);
+            	await snap(`install microstack --beta --devmode --channel=${channel}`);
 	        } else {
-            	await exec.exec("sudo snap install microstack --beta --devmode");
+            	await snap("install microstack --beta --devmode");
 	        }
-            await exec.exec("sudo snap alias microstack.openstack openstack");
+            await snap("alias microstack.openstack openstack");
             core.endGroup();
             core.startGroup("Initialize MicroStack");
             await exec.exec("sudo microstack init --auto --control");
@@ -259,13 +280,13 @@ async function run() {
         }
         core.exportVariable('CONTROLLER_NAME', controller_name);
         core.startGroup("Install kubectl");
-        await exec.exec("sudo snap install kubectl --classic");
+        await snap("install kubectl --classic");
         await exec.exec("mkdir", ["-p", `${HOME}/.kube`]);
         if (provider === "microk8s") {
             await exec_as_microk8s(`microk8s config > ${HOME}/.kube/config`);
         }
         core.endGroup();
-    } catch(error) {
+    } catch(error: any) {
         core.setFailed(error.message);
     }
 }
