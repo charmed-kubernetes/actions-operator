@@ -31,11 +31,11 @@ inputs:
   charm-channel:
     description: "snap channel for charm, installed via snap"
     required: false
-    default: "3.x/stable"
+    default: "latest/stable"
   charmcraft-channel:
     description: "snap channel for charmcraft, installed via snap"
     required: false
-    default: "2.2/stable"
+    default: "latest/stable"
   juju-channel:
     description: "snap channel for juju, installed via snap"
     required: false
@@ -47,7 +47,7 @@ inputs:
   lxd-channel:
     description: "snap channel for lxd regardless of provider, installed via snap"
     required: false
-    default: "5.10/stable"
+    default: "latest/stable"
   juju-crashdump-channel:
     description: "snap channel for juju-crashdump, installed via snap"
     required: false
