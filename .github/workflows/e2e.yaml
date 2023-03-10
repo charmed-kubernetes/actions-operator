@@ -128,3 +128,38 @@ jobs:
       - name: Run Tests
         run: |
           tox -e tests -- -k "not k8s"
+
+  test-multi-controller:
+    name: Test microk8s next to lxd
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os:
+          - ubuntu-20.04
+          - ubuntu-22.04
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v3
+      - name: Setup k8s controller
+        uses: ./
+        with:
+          juju-channel: 3.0/stable
+          provider: microk8s
+          channel: 1.26-strict/stable
+      - name: Save k8s controller name
+        id: k8s-controller
+        # The `CONTROLLER_NAME` envvar is set by this actions
+        run: echo "name=$CONTROLLER_NAME" >> $GITHUB_OUTPUT
+      - name: Setup lxd controller
+        uses: charmed-kubernetes/actions-operator@main
+        with:
+          juju-channel: 3.0/stable
+          provider: lxd
+      - name: Save lxd controller name
+        id: lxd-controller
+        # The `CONTROLLER_NAME` envvar is set by this action
+        run: echo "name=$CONTROLLER_NAME" >> $GITHUB_OUTPUT
+      - name: Test we can switch to the controllers
+        run: |
+          juju switch ${{ steps.k8s-controller.outputs.name }}
+          juju switch ${{ steps.lxd-controller.outputs.name }}
