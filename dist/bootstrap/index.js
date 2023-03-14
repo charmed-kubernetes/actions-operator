@@ -5572,7 +5572,7 @@ function run() {
         const credentials_yaml = core.getInput("credentials-yaml");
         const clouds_yaml = core.getInput("clouds-yaml");
         const extra_bootstrap_options = core.getInput("bootstrap-options");
-        const controller_name = `github-pr-${GITHUB_SHA}`;
+        const controller_name = `github-pr-${GITHUB_SHA}-${provider}`;
         const bootstrap_options = `${controller_name} --model-default test-mode=true --model-default automatically-retry-hooks=false --model-default logging-config="<root>=DEBUG" ${extra_bootstrap_options}`;
         const charm_channel = core.getInput("charm-channel");
         const charmcraft_channel = core.getInput("charmcraft-channel");
