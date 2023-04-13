@@ -74,7 +74,7 @@ async function retry_until_rc(cmd: string, expected_rc=0, maxRetries=12, timeout
 async function microk8s_init(addons) {
     // microk8s needs some additional things done to ensure it's ready for Juju.
     // Add the given addons if any were given.
-    await exec_as_microk8s("microk8s status --wait-ready");
+    await exec_as_microk8s("microk8s status --wait-ready --timeout 900");
     if (addons) {
         await exec_as_microk8s("sudo microk8s enable " + addons);
     }
