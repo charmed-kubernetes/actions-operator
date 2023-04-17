@@ -8,7 +8,7 @@ Simply include the action as a step in your Workflow:
 
 ```yaml
 - name: Setup operator environment
-  uses: charmed-kubernetes/actions-operator@main
+  uses: charmed-kubernetes/actions-operator@1.1.0
 ```
 
 This will give your job an environment with the following:
@@ -69,9 +69,9 @@ dns, storage and rbac. You can override these defaults with the following:
         uses: charmed-kubernetes/actions-operator@main
         with:
           provider: microk8s
-          microk8s-addons: "storage dns rbac registry"
+          microk8s-addons: "hostpath-storage dns rbac registry"
 ```
-Currently, if specific addons are defined, a minimum set of addons (the defaults) `dns, storage, rbac` must be enabled for the action to work properly..
+Currently, if specific addons are defined, a minimum set of addons (the defaults) `dns, hostpath-storage, rbac` must be enabled for the action to work properly..
 
 ## pytest-operator
 
