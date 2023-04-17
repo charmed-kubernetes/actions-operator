@@ -59,7 +59,7 @@ inputs:
   microk8s-addons:
     description: "microk8s addons to enable"
     required: false
-    default: "storage dns rbac"
+    default: "hostpath-storage dns rbac"
 runs:
   using: "node16"
   main: "dist/bootstrap/index.js"
