@@ -5509,7 +5509,10 @@ function microk8s_init(addons) {
     return __awaiter(this, void 0, void 0, function* () {
         // microk8s needs some additional things done to ensure it's ready for Juju.
         // Add the given addons if any were given.
-        yield exec_as_microk8s("microk8s status --wait-ready --timeout 900");
+        if (!(yield exec_as_microk8s("microk8s status --wait-ready --timeout 900"))) {
+            core.setFailed("Timed out waiting for microk8s to be ready");
+            return false;
+        }
         if (addons) {
             yield exec_as_microk8s("sudo microk8s enable " + addons);
         }
