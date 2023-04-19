@@ -5510,7 +5510,7 @@ function microk8s_init(addons) {
         // microk8s needs some additional things done to ensure it's ready for Juju.
         // Add the given addons if any were given.
         if (!(yield exec_as_microk8s("microk8s status --wait-ready --timeout 900"))) {
-            core.setFailed("Timed out waiting for microk8s to be ready");
+            core.setFailed("microk8s couldn't become ready");
             return false;
         }
         if (addons) {
