@@ -147,8 +147,10 @@ async function run() {
     const juju_channel = core.getInput("juju-channel");
     const juju_bundle_channel = core.getInput("juju-bundle-channel");
     const juju_crashdump_channel = core.getInput("juju-crashdump-channel")
+    const juju_classic_confinement = core.getInput("juju-classic-confinement") == "true" ? "--classic" : "";
     const lxd_channel = core.getInput("lxd-channel");
     const microk8s_group = get_microk8s_group();
+    const microk8s_classic_confinement = core.getInput("microk8s-classic-confinement") == "true" ? "--classic" : "";
     let bootstrap_constraints = core.getInput("bootstrap-constraints");
     const microk8s_addons = core.getInput("microk8s-addons")
     let group = "";
@@ -181,7 +183,7 @@ async function run() {
         await exec.exec("sudo --preserve-env=http_proxy,https_proxy,no_proxy pip3 install tox");
         core.endGroup();
         core.startGroup("Install Juju");
-        await snap(`install juju --classic --channel=${juju_channel}`);
+        await snap(`install juju ${juju_classic_confinement} --channel=${juju_channel}`);
         core.endGroup();
         core.startGroup("Install tools");
         await snap("install jq");
@@ -204,21 +206,21 @@ async function run() {
         await exec.exec("mkdir", ["-p", juju_dir]);
         let bootstrap_command = `juju bootstrap --debug --verbose ${provider} ${bootstrap_options}`
         if (provider === "lxd") {
-            if ([null, ""].includes(channel) == false){
+            if ([null, ""].includes(channel) == false) {
                 await snap(`refresh lxd --channel=${channel}`);
-	        }
+            }
             group = "lxd";
         } else if (provider === "microk8s") {
             core.startGroup("Install microk8s");
-            if ([null, ""].includes(channel) == false){
-                await snap(`install microk8s --classic --channel=${channel}`);
+            if ([null, ""].includes(channel) == false) {
+                await snap(`install microk8s ${microk8s_classic_confinement} --channel=${channel}`);
             } else {
-                await snap("install microk8s --classic");
+                await snap(`install microk8s ${microk8s_classic_confinement}`);
             }
             core.endGroup();
             core.startGroup("Initialize microk8s");
             await exec.exec('bash', ['-c', `sudo usermod -a -G ${microk8s_group} $USER`]);
-            if(!await microk8s_init(microk8s_addons)) {
+            if (!await microk8s_init(microk8s_addons)) {
                 return;
             }
             group = microk8s_group;

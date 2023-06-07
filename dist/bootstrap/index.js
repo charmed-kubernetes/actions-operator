@@ -5579,8 +5579,10 @@ function run() {
         const juju_channel = core.getInput("juju-channel");
         const juju_bundle_channel = core.getInput("juju-bundle-channel");
         const juju_crashdump_channel = core.getInput("juju-crashdump-channel");
+        const juju_classic_confinement = core.getInput("juju-classic-confinement") == "true" ? "--classic" : "";
         const lxd_channel = core.getInput("lxd-channel");
         const microk8s_group = get_microk8s_group();
+        const microk8s_classic_confinement = core.getInput("microk8s-classic-confinement") == "true" ? "--classic" : "";
         let bootstrap_constraints = core.getInput("bootstrap-constraints");
         const microk8s_addons = core.getInput("microk8s-addons");
         let group = "";
@@ -5613,7 +5615,7 @@ function run() {
             yield exec.exec("sudo --preserve-env=http_proxy,https_proxy,no_proxy pip3 install tox");
             core.endGroup();
             core.startGroup("Install Juju");
-            yield snap(`install juju --classic --channel=${juju_channel}`);
+            yield snap(`install juju ${juju_classic_confinement} --channel=${juju_channel}`);
             core.endGroup();
             core.startGroup("Install tools");
             yield snap("install jq");
@@ -5642,10 +5644,10 @@ function run() {
             else if (provider === "microk8s") {
                 core.startGroup("Install microk8s");
                 if ([null, ""].includes(channel) == false) {
-                    yield snap(`install microk8s --classic --channel=${channel}`);
+                    yield snap(`install microk8s ${microk8s_classic_confinement} --channel=${channel}`);
                 }
                 else {
-                    yield snap("install microk8s --classic");
+                    yield snap(`install microk8s ${microk8s_classic_confinement}`);
                 }
                 core.endGroup();
                 core.startGroup("Initialize microk8s");
