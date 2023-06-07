@@ -44,6 +44,10 @@ inputs:
     description: "snap channel for juju bundle, installed via snap"
     required: false
     default: "latest/stable"
+  juju-classic-confinement:
+    description: "Install juju with classic confinement"
+    required: false
+    default: "true"
   lxd-channel:
     description: "snap channel for lxd regardless of provider, installed via snap"
     required: false
@@ -60,6 +64,10 @@ inputs:
     description: "microk8s addons to enable"
     required: false
     default: "storage dns rbac"
+  microk8s-classic-confinement:
+    description: "Install microk8s with classic confinement"
+    required: false
+    default: "true"
 runs:
   using: "node16"
   main: "dist/bootstrap/index.js"
