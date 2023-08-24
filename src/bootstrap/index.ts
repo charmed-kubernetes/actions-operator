@@ -51,6 +51,10 @@ function get_microk8s_group() {
     }
 }
 
+function parse_addon_names(addons: string) {
+    return addons.split(" ").map((addon) => addon.split(":", 2)[0]);
+}
+
 
 async function exec_as_microk8s(cmd: string, options = {}) {
     const microk8s_group = get_microk8s_group();
@@ -105,8 +109,17 @@ async function microk8s_init(addons) {
         await exec_as_microk8s("microk8s kubectl delete serviceaccount test-sa");
     }
 
-    await retry_until_rc("microk8s kubectl auth can-i create pods")
-    await retry_until_rc("microk8s kubectl auth can-i create pods --as=me", 1)
+    if (! await retry_until_rc("microk8s kubectl auth can-i create pods")) {
+        core.setFailed("Timed out waiting for create pods authorization");
+        return false;
+    }
+    if (parse_addon_names(addons).includes("rbac")) {
+        if (! await retry_until_rc("microk8s kubectl auth can-i create pods --as=me", 1)){
+            core.setFailed("Timed out waiting for create pods denial as 'me'");
+            return false;
+        }
+    }
+
     return true;
 }
 
