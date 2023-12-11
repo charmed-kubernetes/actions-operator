@@ -71,8 +71,24 @@ async function retry_until_rc(cmd: string, expected_rc=0, maxRetries=12, timeout
     return false;
 }
 
-async function microk8s_init(addons) {
+async function microk8s_init(addons, docker_registry) {
     // microk8s needs some additional things done to ensure it's ready for Juju.
+    // Add docker registry configuration if given.
+    if (docker_registry) {
+        let hostname;
+        let port;
+        try {
+            const docker_registry_url = new URL(docker_registry);
+            hostname = docker_registry_url.hostname;
+            port = docker_registry_url.port;
+        } catch(err) {
+            console.log(`Failed to parse docker registry URL for microk8s: ${err}`);
+        }
+        await exec.exec("bash", ["-c", `cat <<EOT >> /var/snap/microk8s/current/args/certs.d/docker.io/hosts.toml\nserver = "${docker_registry}"\n\n[host."${hostname}:${port}"]\ncapabilities = ["pull", "resolve"]\nEOT`]);
+        await exec.exec("microk8s stop")
+        await exec.exec("microk8s start")
+    }
+
     // Add the given addons if any were given.
     await exec_as_microk8s("microk8s status --wait-ready");
     if (addons) {
@@ -151,6 +167,7 @@ async function run() {
     const microk8s_group = get_microk8s_group();
     let bootstrap_constraints = core.getInput("bootstrap-constraints");
     const microk8s_addons = core.getInput("microk8s-addons")
+    const microk8s_docker_registry = core.getInput("microk8s-docker_registry")
     let group = "";
     try {
         core.addPath('/snap/bin');
@@ -218,7 +235,7 @@ async function run() {
             core.endGroup();
             core.startGroup("Initialize microk8s");
             await exec.exec('bash', ['-c', `sudo usermod -a -G ${microk8s_group} $USER`]);
-            if(!await microk8s_init(microk8s_addons)) {
+            if(!await microk8s_init(microk8s_addons, microk8s_docker_registry)) {
                 return;
             }
             group = microk8s_group;

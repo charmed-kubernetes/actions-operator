@@ -60,6 +60,8 @@ inputs:
     description: "microk8s addons to enable"
     required: false
     default: "storage dns rbac"
+  microk8s-docker-registry:
+    description: "URL of docker registry for microk8s to use"
 runs:
   using: "node16"
   main: "dist/bootstrap/index.js"
