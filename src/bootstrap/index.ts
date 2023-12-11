@@ -82,7 +82,8 @@ async function microk8s_init(addons, docker_registry) {
             hostname = docker_registry_url.hostname;
             port = docker_registry_url.port;
         } catch(err) {
-            console.log(`Failed to parse docker registry URL for microk8s: ${err}`);
+            core.setFailed(`Failed to parse URL of docker registry for microk8s: ${err}`);
+            return false;
         }
         await exec.exec("bash", ["-c", `cat <<EOT >> /var/snap/microk8s/current/args/certs.d/docker.io/hosts.toml\nserver = "${docker_registry}"\n\n[host."${hostname}:${port}"]\ncapabilities = ["pull", "resolve"]\nEOT`]);
         await exec.exec("microk8s stop")
