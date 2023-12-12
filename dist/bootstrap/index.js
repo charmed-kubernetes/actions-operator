@@ -5655,7 +5655,7 @@ function run() {
         const microk8s_group = get_microk8s_group();
         let bootstrap_constraints = core.getInput("bootstrap-constraints");
         const microk8s_addons = core.getInput("microk8s-addons");
-        const microk8s_docker_registry = core.getInput("microk8s-docker-registry");
+        const microk8s_docker_registry = core.getInput("microk8s-docker-registry") || process.env["MICROK8S_DOCKER_REGISTRY"];
         let group = "";
         try {
             core.addPath('/snap/bin');
