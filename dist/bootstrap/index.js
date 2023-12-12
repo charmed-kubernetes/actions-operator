@@ -5505,9 +5505,26 @@ function retry_until_rc(cmd, expected_rc = 0, maxRetries = 12, timeout = 10000) 
         return false;
     });
 }
-function microk8s_init(addons) {
+function microk8s_init(addons, docker_registry) {
     return __awaiter(this, void 0, void 0, function* () {
         // microk8s needs some additional things done to ensure it's ready for Juju.
+        // Add docker registry configuration if given.
+        if (docker_registry) {
+            let hostname;
+            let port;
+            try {
+                const docker_registry_url = new URL(docker_registry);
+                hostname = docker_registry_url.hostname;
+                port = docker_registry_url.port;
+            }
+            catch (err) {
+                core.setFailed(`Failed to parse URL of docker registry for microk8s: ${err}`);
+                return false;
+            }
+            yield exec.exec("bash", ["-c", `cat <<EOT >> /var/snap/microk8s/current/args/certs.d/docker.io/hosts.toml\nserver = "${docker_registry}"\n\n[host."${hostname}:${port}"]\ncapabilities = ["pull", "resolve"]\nEOT`]);
+            yield exec.exec("microk8s stop");
+            yield exec.exec("microk8s start");
+        }
         // Add the given addons if any were given.
         yield exec_as_microk8s("microk8s status --wait-ready");
         if (addons) {
@@ -5583,6 +5600,7 @@ function run() {
         const microk8s_group = get_microk8s_group();
         let bootstrap_constraints = core.getInput("bootstrap-constraints");
         const microk8s_addons = core.getInput("microk8s-addons");
+        const microk8s_docker_registry = core.getInput("microk8s-docker_registry");
         let group = "";
         try {
             core.addPath('/snap/bin');
@@ -5650,7 +5668,7 @@ function run() {
                 core.endGroup();
                 core.startGroup("Initialize microk8s");
                 yield exec.exec('bash', ['-c', `sudo usermod -a -G ${microk8s_group} $USER`]);
-                if (!(yield microk8s_init(microk8s_addons))) {
+                if (!(yield microk8s_init(microk8s_addons, microk8s_docker_registry))) {
                     return;
                 }
                 group = microk8s_group;
