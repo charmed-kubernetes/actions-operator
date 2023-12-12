@@ -5563,6 +5563,15 @@ const _retryable_exec = (command, initial = 10, maxTry = 5) => {
 };
 const snap = _retryable_exec("snap");
 const apt_get = _retryable_exec("apt-get");
+function snap_install(name, channel = "", classic = true) {
+    return __awaiter(this, void 0, void 0, function* () {
+        var args = new Array("install", name, `--channel=${channel}`);
+        if (classic) {
+            args.push("--classic");
+        }
+        yield snap(args.join(" "));
+    });
+}
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
         const HOME = process.env["HOME"];
@@ -5613,7 +5622,7 @@ function run() {
             yield exec.exec("sudo --preserve-env=http_proxy,https_proxy,no_proxy pip3 install tox");
             core.endGroup();
             core.startGroup("Install Juju");
-            yield snap(`install juju --classic --channel=${juju_channel}`);
+            yield snap_install("juju", juju_channel, juju_channel.includes("2.9"));
             core.endGroup();
             core.startGroup("Install tools");
             yield snap("install jq");

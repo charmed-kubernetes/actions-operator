@@ -43,14 +43,12 @@ jobs:
         if : ${{ fromJSON(matrix.juju) > 3 }}
         run: |
           tox -e tests -- -k "not k8s"
-          juju status
           exit $?
 
       - name: Run 2.9 Tests
         if : ${{ fromJSON(matrix.juju) < 3 }}
         run: |
           tox -e 2.9-tests -- -k "not k8s"
-          juju status
           exit $?
 
   test-microk8s-strict:
