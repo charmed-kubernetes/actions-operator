@@ -10213,6 +10213,17 @@ function upload_artifact(files) {
         core.info(`artifact ${result.artifactName} (${result.size}) was uploaded`);
     });
 }
+function destroy_controller(controller_name) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const juju_channel = core.getInput("juju-channel");
+        if (juju_channel.includes("2.9")) {
+            yield exec.exec(`juju destroy-controller -y ${controller_name} --destroy-all-models --destroy-storage`);
+        }
+        else {
+            yield exec.exec(`juju destroy-controller ${controller_name} --no-prompt --destroy-all-models --destroy-storage`);
+        }
+    });
+}
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
         const controller_name = process.env["CONTROLLER_NAME"];
@@ -10221,7 +10232,7 @@ function run() {
             if (controller_name) {
                 core.addPath('/snap/bin');
                 if (!["microk8s", "lxd"].includes(provider)) {
-                    yield exec.exec(`juju destroy-controller -y ${controller_name} --destroy-all-models --destroy-storage`);
+                    yield destroy_controller(controller_name);
                 }
                 if (provider === "microstack") {
                     yield exec.exec("rm -rf /tmp/simplestreams");

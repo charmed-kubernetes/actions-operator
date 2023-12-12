@@ -22,6 +22,16 @@ async function upload_artifact(files: string[]) {
     core.info(`artifact ${result.artifactName} (${result.size}) was uploaded`);
 }
 
+async function destroy_controller(controller_name: string) {
+    const juju_channel = core.getInput("juju-channel");
+    if ( juju_channel.includes("2.9") ) {
+        await exec.exec(`juju destroy-controller -y ${controller_name} --destroy-all-models --destroy-storage`);
+    } else {
+        await exec.exec(`juju destroy-controller ${controller_name} --no-prompt --destroy-all-models --destroy-storage`);
+    }
+}
+
+
 async function run() {
     const controller_name = process.env["CONTROLLER_NAME"];
     const provider = core.getInput("provider");
@@ -30,7 +40,7 @@ async function run() {
         if (controller_name) {
             core.addPath('/snap/bin');
             if (!["microk8s", "lxd"].includes(provider)) {
-                await exec.exec(`juju destroy-controller -y ${controller_name} --destroy-all-models --destroy-storage`);
+                await destroy_controller(controller_name);
             }
             if (provider === "microstack") {
                 await exec.exec("rm -rf /tmp/simplestreams");
@@ -50,7 +60,7 @@ async function run() {
         }
         core.endGroup();
 
-    } catch(error) {
+    } catch(error: any) {
         core.setFailed(error.message);
     }
 }
