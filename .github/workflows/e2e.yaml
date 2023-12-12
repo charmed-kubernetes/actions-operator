@@ -53,8 +53,31 @@ jobs:
           juju status
           exit $?
 
-  test-microk8s:
+  test-microk8s-strict:
     name: Test microk8s environment
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os:
+          - ubuntu-20.04
+          - ubuntu-22.04
+        channel:
+          - 1.28-strict/stable
+          - 1.27-strict/stable
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v3
+      - uses: ./
+        with:
+          provider: microk8s
+          channel: ${{ matrix.channel }}
+
+      - name: Run Tests
+        run: |
+          tox -e tests -- -k "not machine"
+
+  test-microk8s-classic:
+    name: Test microk8s classic environment
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -71,31 +94,11 @@ jobs:
         with:
           provider: microk8s
           channel: ${{ matrix.channel }}
+          juju-channel: 2.9/stable
 
       - name: Run Tests
         run: |
-          tox -e tests -- -k "not machine"
-
-  test-microk8s-strict:
-    name: Test microk8s strict environment
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os:
-          - ubuntu-20.04
-          - ubuntu-22.04
-    steps:
-      - name: Check out code
-        uses: actions/checkout@v3
-      - uses: ./
-        with:
-          provider: microk8s
-          channel: 1.28-strict/stable
-          juju-channel: 3.1/stable
-
-      - name: Run Tests
-        run: |
-          tox -e tests -- -k "not machine"
+          tox -e 2.9-tests -- -k "not machine"
 
   test-microk8s-default-addons:
     name: Test default addons are enabled by microk8s provider.
@@ -106,6 +109,7 @@ jobs:
       - uses: ./
         with:
           provider: microk8s
+          channel: 1.28-strict/stable
 
       - name: Run Tests
         run: |
@@ -157,7 +161,6 @@ jobs:
         uses: ./
         with:
           provider: microk8s
-          juju-channel: 3.1/stable
           channel: 1.28-strict/stable
       - name: Save k8s controller name
         id: k8s-controller
@@ -166,7 +169,6 @@ jobs:
       - name: Setup lxd controller
         uses: charmed-kubernetes/actions-operator@main
         with:
-          juju-channel: 3.1/stable
           provider: lxd
       - name: Save lxd controller name
         id: lxd-controller
