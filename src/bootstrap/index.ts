@@ -1,7 +1,9 @@
 import * as core from '@actions/core';
 import * as exec from '@actions/exec';
+import * as fs from 'fs';
 import { retryAsyncDecorator } from 'ts-retry/lib/cjs/retry/utils';
 import semver from 'semver';
+import dedent from 'ts-dedent';
 
 declare var process : {
     env: {
@@ -71,7 +73,7 @@ async function retry_until_rc(cmd: string, expected_rc=0, maxRetries=12, timeout
     return false;
 }
 
-async function microk8s_init(addons, docker_registry) {
+async function microk8s_init(addons, docker_registry:string) {
     // microk8s needs some additional things done to ensure it's ready for Juju.
     // Add docker registry configuration if given.
     if (docker_registry) {
@@ -85,9 +87,13 @@ async function microk8s_init(addons, docker_registry) {
             core.setFailed(`Failed to parse URL of docker registry for microk8s: ${err}`);
             return false;
         }
-        await exec.exec("bash", ["-c", `cat <<EOT >> /var/snap/microk8s/current/args/certs.d/docker.io/hosts.toml\nserver = "${docker_registry}"\n\n[host."${hostname}:${port}"]\ncapabilities = ["pull", "resolve"]\nEOT`]);
-        await exec.exec("microk8s stop")
-        await exec.exec("microk8s start")
+        let content = dedent`
+        server = "${docker_registry}"
+        
+        [host."${hostname}:${port}"]
+        capabilities = ["pull", "resolve"]
+        `;
+        fs.writeFileSync("/var/snap/microk8s/current/args/certs.d/docker.io/hosts.toml", content)
     }
 
     // Add the given addons if any were given.
@@ -168,7 +174,7 @@ async function run() {
     const microk8s_group = get_microk8s_group();
     let bootstrap_constraints = core.getInput("bootstrap-constraints");
     const microk8s_addons = core.getInput("microk8s-addons")
-    const microk8s_docker_registry = core.getInput("microk8s-docker_registry")
+    const microk8s_docker_registry = core.getInput("microk8s-docker-registry")
     let group = "";
     try {
         core.addPath('/snap/bin');
