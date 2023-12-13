@@ -5560,24 +5560,20 @@ function microk8s_init(addons, docker_registry) {
     return __awaiter(this, void 0, void 0, function* () {
         // microk8s needs some additional things done to ensure it's ready for Juju.
         // Add docker registry configuration if given.
-        let docker_registry_url = process.env.DOCKERHUB_MIRROR;
         if (docker_registry) {
-            docker_registry_url = docker_registry;
-        }
-        if (docker_registry_url) {
             let hostname;
             let port;
             try {
-                const url = new URL(docker_registry_url);
-                hostname = url.hostname;
-                port = url.port;
+                const docker_registry_url = new URL(docker_registry);
+                hostname = docker_registry_url.hostname;
+                port = docker_registry_url.port;
             }
             catch (err) {
                 core.setFailed(`Failed to parse URL of docker registry for microk8s: ${err}`);
                 return false;
             }
             let content = ts_dedent_1.default `
-        server = "${docker_registry_url}"
+        server = "${docker_registry}"
         
         [host."${hostname}:${port}"]
         capabilities = ["pull", "resolve"]
