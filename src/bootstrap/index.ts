@@ -73,22 +73,22 @@ async function retry_until_rc(cmd: string, expected_rc=0, maxRetries=12, timeout
     return false;
 }
 
-async function microk8s_init(addons, docker_registry:string) {
+async function microk8s_init(addons, container_registry_url:string) {
     // microk8s needs some additional things done to ensure it's ready for Juju.
-    // Add docker registry configuration if given.
-    if (docker_registry) {
+    // Add container registry configuration if given.
+    if (container_registry_url) {
         let hostname;
         let port;
         try {
-            const docker_registry_url = new URL(docker_registry);
-            hostname = docker_registry_url.hostname;
-            port = docker_registry_url.port;
+            const url = new URL(container_registry_url);
+            hostname = url.hostname;
+            port = url.port;
         } catch(err) {
-            core.setFailed(`Failed to parse URL of docker registry for microk8s: ${err}`);
+            core.setFailed(`Failed to parse URL of container registry for microk8s: ${err}`);
             return false;
         }
         let content = dedent`
-        server = "${docker_registry}"
+        server = "${container_registry_url}"
         
         [host."${hostname}:${port}"]
         capabilities = ["pull", "resolve"]
@@ -174,7 +174,7 @@ async function run() {
     const microk8s_group = get_microk8s_group();
     let bootstrap_constraints = core.getInput("bootstrap-constraints");
     const microk8s_addons = core.getInput("microk8s-addons")
-    const microk8s_docker_registry = core.getInput("microk8s-docker-registry") || process.env["DOCKERHUB_MIRROR"]
+    const container_registry_url = core.getInput("container-registry-url") || process.env["CONTAINER_REGISTRY_URL"]
     let group = "";
     try {
         core.addPath('/snap/bin');
@@ -242,7 +242,7 @@ async function run() {
             core.endGroup();
             core.startGroup("Initialize microk8s");
             await exec.exec('bash', ['-c', `sudo usermod -a -G ${microk8s_group} $USER`]);
-            if(!await microk8s_init(microk8s_addons, microk8s_docker_registry)) {
+            if(!await microk8s_init(microk8s_addons, container_registry_url)) {
                 return;
             }
             group = microk8s_group;
