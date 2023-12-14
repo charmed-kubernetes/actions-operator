@@ -129,7 +129,11 @@ const _retryable_exec = (command: string, initial: number = 10, maxTry: number =
 const snap = _retryable_exec("snap");
 const apt_get = _retryable_exec("apt-get");
 
-
+async function snap_install(name: string, channel: string="", classic: boolean=true) {
+    var args = new Array<string>("install", name, `--channel=${channel}`);
+    if (classic) {args.push("--classic")}
+    await snap(args.join(" "))
+}
 
 async function run() {
     const HOME = process.env["HOME"]
@@ -181,7 +185,7 @@ async function run() {
         await exec.exec("sudo --preserve-env=http_proxy,https_proxy,no_proxy pip3 install tox");
         core.endGroup();
         core.startGroup("Install Juju");
-        await snap(`install juju --classic --channel=${juju_channel}`);
+        await snap_install("juju", juju_channel, juju_channel.includes("2.9"));
         core.endGroup();
         core.startGroup("Install tools");
         await snap("install jq");

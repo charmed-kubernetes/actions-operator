@@ -26,6 +26,10 @@ jobs:
         os:
           - ubuntu-20.04
           - ubuntu-22.04
+        juju:
+          - '2.9'
+          - '3.1'
+          - '3.3'
     steps:
       - name: Check out code
         uses: actions/checkout@v3
@@ -33,14 +37,21 @@ jobs:
         with:
           provider: lxd
           channel: latest/stable
+          juju-channel: ${{ matrix.juju }}/stable
 
-      - name: Run Tests
+      - name: Run 3.x Tests
+        if : ${{ fromJSON(matrix.juju) > 3 }}
         run: |
           tox -e tests -- -k "not k8s"
-          juju status
           exit $?
 
-  test-microk8s:
+      - name: Run 2.9 Tests
+        if : ${{ fromJSON(matrix.juju) < 3 }}
+        run: |
+          tox -e 2.9-tests -- -k "not k8s"
+          exit $?
+
+  test-microk8s-strict:
     name: Test microk8s environment
     runs-on: ${{ matrix.os }}
     strategy:
@@ -49,8 +60,8 @@ jobs:
           - ubuntu-20.04
           - ubuntu-22.04
         channel:
-          - 1.23/stable
-          - latest/stable
+          - 1.28-strict/stable
+          - 1.27-strict/stable
     steps:
       - name: Check out code
         uses: actions/checkout@v3
@@ -63,26 +74,29 @@ jobs:
         run: |
           tox -e tests -- -k "not machine"
 
-  test-microk8s-strict:
-    name: Test microk8s strict environment
+  test-microk8s-classic:
+    name: Test microk8s classic environment
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         os:
           - ubuntu-20.04
           - ubuntu-22.04
+        channel:
+          - 1.28/stable
+          - latest/stable
     steps:
       - name: Check out code
         uses: actions/checkout@v3
       - uses: ./
         with:
           provider: microk8s
-          channel: 1.25-strict/stable
-          juju-channel: 3.0/stable
+          channel: ${{ matrix.channel }}
+          juju-channel: 2.9/stable
 
       - name: Run Tests
         run: |
-          tox -e tests -- -k "not machine"
+          tox -e 2.9-tests -- -k "not machine"
 
   test-microk8s-default-addons:
     name: Test default addons are enabled by microk8s provider.
@@ -93,6 +107,7 @@ jobs:
       - uses: ./
         with:
           provider: microk8s
+          channel: 1.28-strict/stable
 
       - name: Run Tests
         run: |
@@ -123,7 +138,8 @@ jobs:
           provider: vsphere
           credentials-yaml: ${{ secrets.CREDENTIALS_YAML }}
           clouds-yaml: ${{ secrets.CLOUDS_YAML }}
-          bootstrap-options: "--model-default datastore=vsanDatastore --model-default primary-network=VLAN_2764"
+          bootstrap-options: "--model-default datastore=vsanDatastore --model-default primary-network=VLAN_2764 --bootstrap-image=juju-ci-root/templates/jammy-test-template --bootstrap-series=jammy"
+          bootstrap-constraints: "arch=amd64 cores=2 mem=4G"
 
       - name: Run Tests
         run: |
@@ -143,9 +159,8 @@ jobs:
       - name: Setup k8s controller
         uses: ./
         with:
-          juju-channel: 3.0/stable
           provider: microk8s
-          channel: 1.26-strict/stable
+          channel: 1.28-strict/stable
       - name: Save k8s controller name
         id: k8s-controller
         # The `CONTROLLER_NAME` envvar is set by this actions
@@ -153,7 +168,6 @@ jobs:
       - name: Setup lxd controller
         uses: charmed-kubernetes/actions-operator@main
         with:
-          juju-channel: 3.0/stable
           provider: lxd
       - name: Save lxd controller name
         id: lxd-controller
