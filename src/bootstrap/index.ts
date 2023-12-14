@@ -1,7 +1,9 @@
 import * as core from '@actions/core';
 import * as exec from '@actions/exec';
+import * as fs from 'fs';
 import { retryAsyncDecorator } from 'ts-retry/lib/cjs/retry/utils';
 import semver from 'semver';
+import dedent from 'ts-dedent';
 
 declare var process : {
     env: {
@@ -71,8 +73,29 @@ async function retry_until_rc(cmd: string, expected_rc=0, maxRetries=12, timeout
     return false;
 }
 
-async function microk8s_init(addons) {
+async function microk8s_init(addons, container_registry_url:string) {
     // microk8s needs some additional things done to ensure it's ready for Juju.
+    // Add container registry configuration if given.
+    if (container_registry_url) {
+        let hostname;
+        let port;
+        try {
+            const url = new URL(container_registry_url);
+            hostname = url.hostname;
+            port = url.port;
+        } catch(err) {
+            core.setFailed(`Failed to parse URL of container registry for microk8s: ${err}`);
+            return false;
+        }
+        let content = dedent`
+        server = "${container_registry_url}"
+        
+        [host."${hostname}:${port}"]
+        capabilities = ["pull", "resolve"]
+        `;
+        fs.writeFileSync("/var/snap/microk8s/current/args/certs.d/docker.io/hosts.toml", content)
+    }
+
     // Add the given addons if any were given.
     await exec_as_microk8s("microk8s status --wait-ready");
     if (addons) {
@@ -155,6 +178,7 @@ async function run() {
     const microk8s_group = get_microk8s_group();
     let bootstrap_constraints = core.getInput("bootstrap-constraints");
     const microk8s_addons = core.getInput("microk8s-addons")
+    const container_registry_url = core.getInput("container-registry-url") || process.env["CONTAINER_REGISTRY_URL"]
     let group = "";
     try {
         core.addPath('/snap/bin');
@@ -222,7 +246,7 @@ async function run() {
             core.endGroup();
             core.startGroup("Initialize microk8s");
             await exec.exec('bash', ['-c', `sudo usermod -a -G ${microk8s_group} $USER`]);
-            if(!await microk8s_init(microk8s_addons)) {
+            if(!await microk8s_init(microk8s_addons, container_registry_url)) {
                 return;
             }
             group = microk8s_group;

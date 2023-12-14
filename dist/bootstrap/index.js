@@ -4319,6 +4319,55 @@ module.exports = validRange
 
 /***/ }),
 
+/***/ 3604:
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.dedent = void 0;
+function dedent(templ) {
+    var values = [];
+    for (var _i = 1; _i < arguments.length; _i++) {
+        values[_i - 1] = arguments[_i];
+    }
+    var strings = Array.from(typeof templ === 'string' ? [templ] : templ);
+    strings[strings.length - 1] = strings[strings.length - 1].replace(/\r?\n([\t ]*)$/, '');
+    var indentLengths = strings.reduce(function (arr, str) {
+        var matches = str.match(/\n([\t ]+|(?!\s).)/g);
+        if (matches) {
+            return arr.concat(matches.map(function (match) { var _a, _b; return (_b = (_a = match.match(/[\t ]/g)) === null || _a === void 0 ? void 0 : _a.length) !== null && _b !== void 0 ? _b : 0; }));
+        }
+        return arr;
+    }, []);
+    if (indentLengths.length) {
+        var pattern_1 = new RegExp("\n[\t ]{" + Math.min.apply(Math, indentLengths) + "}", 'g');
+        strings = strings.map(function (str) { return str.replace(pattern_1, '\n'); });
+    }
+    strings[0] = strings[0].replace(/^\r?\n/, '');
+    var string = strings[0];
+    values.forEach(function (value, i) {
+        var endentations = string.match(/(?:^|\n)( *)$/);
+        var endentation = endentations ? endentations[1] : '';
+        var indentedValue = value;
+        if (typeof value === 'string' && value.includes('\n')) {
+            indentedValue = String(value)
+                .split('\n')
+                .map(function (str, i) {
+                return i === 0 ? str : "" + endentation + str;
+            })
+                .join('\n');
+        }
+        string += indentedValue + strings[i + 1];
+    });
+    return string;
+}
+exports.dedent = dedent;
+exports.default = dedent;
+//# sourceMappingURL=index.js.map
+
+/***/ }),
+
 /***/ 2467:
 /***/ ((__unused_webpack_module, exports) => {
 
@@ -5443,8 +5492,10 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 const core = __importStar(__nccwpck_require__(2186));
 const exec = __importStar(__nccwpck_require__(1514));
+const fs = __importStar(__nccwpck_require__(5747));
 const utils_1 = __nccwpck_require__(2828);
 const semver_1 = __importDefault(__nccwpck_require__(1383));
+const ts_dedent_1 = __importDefault(__nccwpck_require__(3604));
 const ignoreFail = { "ignoreReturnCode": true };
 const os_release = () => __awaiter(void 0, void 0, void 0, function* () {
     // Read os-release file into an object
@@ -5505,9 +5556,30 @@ function retry_until_rc(cmd, expected_rc = 0, maxRetries = 12, timeout = 10000) 
         return false;
     });
 }
-function microk8s_init(addons) {
+function microk8s_init(addons, container_registry_url) {
     return __awaiter(this, void 0, void 0, function* () {
         // microk8s needs some additional things done to ensure it's ready for Juju.
+        // Add container registry configuration if given.
+        if (container_registry_url) {
+            let hostname;
+            let port;
+            try {
+                const url = new URL(container_registry_url);
+                hostname = url.hostname;
+                port = url.port;
+            }
+            catch (err) {
+                core.setFailed(`Failed to parse URL of container registry for microk8s: ${err}`);
+                return false;
+            }
+            let content = ts_dedent_1.default `
+        server = "${container_registry_url}"
+        
+        [host."${hostname}:${port}"]
+        capabilities = ["pull", "resolve"]
+        `;
+            fs.writeFileSync("/var/snap/microk8s/current/args/certs.d/docker.io/hosts.toml", content);
+        }
         // Add the given addons if any were given.
         yield exec_as_microk8s("microk8s status --wait-ready");
         if (addons) {
@@ -5592,6 +5664,7 @@ function run() {
         const microk8s_group = get_microk8s_group();
         let bootstrap_constraints = core.getInput("bootstrap-constraints");
         const microk8s_addons = core.getInput("microk8s-addons");
+        const container_registry_url = core.getInput("container-registry-url") || process.env["CONTAINER_REGISTRY_URL"];
         let group = "";
         try {
             core.addPath('/snap/bin');
@@ -5659,7 +5732,7 @@ function run() {
                 core.endGroup();
                 core.startGroup("Initialize microk8s");
                 yield exec.exec('bash', ['-c', `sudo usermod -a -G ${microk8s_group} $USER`]);
-                if (!(yield microk8s_init(microk8s_addons))) {
+                if (!(yield microk8s_init(microk8s_addons, container_registry_url))) {
                     return;
                 }
                 group = microk8s_group;
