@@ -5492,7 +5492,6 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 const core = __importStar(__nccwpck_require__(2186));
 const exec = __importStar(__nccwpck_require__(1514));
-const fs = __importStar(__nccwpck_require__(5747));
 const utils_1 = __nccwpck_require__(2828);
 const semver_1 = __importDefault(__nccwpck_require__(1383));
 const ts_dedent_1 = __importDefault(__nccwpck_require__(3604));
@@ -5556,29 +5555,45 @@ function retry_until_rc(cmd, expected_rc = 0, maxRetries = 12, timeout = 10000) 
         return false;
     });
 }
-function microk8s_init(addons, container_registry_url) {
+function microk8s_init(channel, addons, container_registry_url) {
     return __awaiter(this, void 0, void 0, function* () {
         // microk8s needs some additional things done to ensure it's ready for Juju.
         // Add container registry configuration if given.
         if (container_registry_url) {
-            let hostname;
-            let port;
-            try {
-                const url = new URL(container_registry_url);
-                hostname = url.hostname;
-                port = url.port;
+            const versionMatch = channel.match(/\d+\.\d+/g);
+            if (versionMatch && parseFloat(versionMatch[0]) <= 1.22) {
+                const templateFile = "/var/snap/microk8s/current/args/containerd-template.toml";
+                let template = "";
+                yield exec.exec("sudo", ["cat", templateFile], {
+                    listeners: {
+                        stdout: (data) => { template += data.toString(); }
+                    }
+                });
+                yield exec.exec("sudo", ["tee", templateFile], { input: Buffer.from(template.replace("https://registry-1.docker.io", container_registry_url)) });
             }
-            catch (err) {
-                core.setFailed(`Failed to parse URL of container registry for microk8s: ${err}`);
-                return false;
+            else {
+                let hostname;
+                let port;
+                try {
+                    const url = new URL(container_registry_url);
+                    hostname = url.hostname;
+                    port = url.port;
+                }
+                catch (err) {
+                    core.setFailed(`Failed to parse URL of container registry for microk8s: ${err}`);
+                    return false;
+                }
+                let content = ts_dedent_1.default `
+            server = "${container_registry_url}"
+            
+            [host."${hostname}:${port}"]
+            capabilities = ["pull", "resolve"]
+            
+            `;
+                yield exec.exec("sudo", ["tee", "/var/snap/microk8s/current/args/certs.d/docker.io/hosts.toml"], { input: Buffer.from(content) });
             }
-            let content = ts_dedent_1.default `
-        server = "${container_registry_url}"
-        
-        [host."${hostname}:${port}"]
-        capabilities = ["pull", "resolve"]
-        `;
-            fs.writeFileSync("/var/snap/microk8s/current/args/certs.d/docker.io/hosts.toml", content);
+            yield exec.exec("sudo", ["microk8s", "stop"]);
+            yield exec.exec("sudo", ["microk8s", "start"]);
         }
         // Add the given addons if any were given.
         yield exec_as_microk8s("microk8s status --wait-ready");
@@ -5732,7 +5747,7 @@ function run() {
                 core.endGroup();
                 core.startGroup("Initialize microk8s");
                 yield exec.exec('bash', ['-c', `sudo usermod -a -G ${microk8s_group} $USER`]);
-                if (!(yield microk8s_init(microk8s_addons, container_registry_url))) {
+                if (!(yield microk8s_init(channel, microk8s_addons, container_registry_url))) {
                     return;
                 }
                 group = microk8s_group;

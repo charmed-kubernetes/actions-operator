@@ -1,6 +1,5 @@
 import * as core from '@actions/core';
 import * as exec from '@actions/exec';
-import * as fs from 'fs';
 import { retryAsyncDecorator } from 'ts-retry/lib/cjs/retry/utils';
 import semver from 'semver';
 import dedent from 'ts-dedent';
@@ -73,27 +72,49 @@ async function retry_until_rc(cmd: string, expected_rc=0, maxRetries=12, timeout
     return false;
 }
 
-async function microk8s_init(addons, container_registry_url:string) {
+async function microk8s_init(channel, addons, container_registry_url:string) {
     // microk8s needs some additional things done to ensure it's ready for Juju.
     // Add container registry configuration if given.
     if (container_registry_url) {
-        let hostname;
-        let port;
-        try {
-            const url = new URL(container_registry_url);
-            hostname = url.hostname;
-            port = url.port;
-        } catch(err) {
-            core.setFailed(`Failed to parse URL of container registry for microk8s: ${err}`);
-            return false;
+        const versionMatch = channel.match(/\d+\.\d+/g);
+        if (versionMatch && parseFloat(versionMatch[0]) <= 1.22) {
+            const templateFile = "/var/snap/microk8s/current/args/containerd-template.toml";
+            let template = "";
+            await exec.exec("sudo", ["cat", templateFile], {
+                    listeners: {
+                        stdout: (data) => { template += data.toString() }
+                    }
+                }
+            )
+            await exec.exec(
+              "sudo", ["tee", templateFile],
+              {input: Buffer.from(template.replace("https://registry-1.docker.io", container_registry_url))}
+            );
+        } else {
+            let hostname;
+            let port;
+            try {
+                const url = new URL(container_registry_url);
+                hostname = url.hostname;
+                port = url.port;
+            } catch (err) {
+                core.setFailed(`Failed to parse URL of container registry for microk8s: ${err}`);
+                return false;
+            }
+            let content = dedent`
+            server = "${container_registry_url}"
+            
+            [host."${hostname}:${port}"]
+            capabilities = ["pull", "resolve"]
+            
+            `;
+            await exec.exec(
+              "sudo", ["tee", "/var/snap/microk8s/current/args/certs.d/docker.io/hosts.toml"],
+              {input: Buffer.from(content)}
+            );
         }
-        let content = dedent`
-        server = "${container_registry_url}"
-        
-        [host."${hostname}:${port}"]
-        capabilities = ["pull", "resolve"]
-        `;
-        fs.writeFileSync("/var/snap/microk8s/current/args/certs.d/docker.io/hosts.toml", content)
+        await exec.exec("sudo", ["microk8s", "stop"])
+        await exec.exec("sudo", ["microk8s", "start"])
     }
 
     // Add the given addons if any were given.
@@ -246,7 +267,7 @@ async function run() {
             core.endGroup();
             core.startGroup("Initialize microk8s");
             await exec.exec('bash', ['-c', `sudo usermod -a -G ${microk8s_group} $USER`]);
-            if(!await microk8s_init(microk8s_addons, container_registry_url)) {
+            if(!await microk8s_init(channel, microk8s_addons, container_registry_url)) {
                 return;
             }
             group = microk8s_group;
