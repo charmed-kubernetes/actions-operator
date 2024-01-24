@@ -5596,7 +5596,10 @@ function microk8s_init(channel, addons, container_registry_url) {
             yield exec.exec("sudo", ["microk8s", "start"]);
         }
         // Add the given addons if any were given.
-        yield exec_as_microk8s("microk8s status --wait-ready");
+        if (!(yield exec_as_microk8s("microk8s status --wait-ready --timeout 900"))) {
+            core.setFailed("microk8s couldn't become ready");
+            return false;
+        }
         if (addons) {
             yield exec_as_microk8s("sudo microk8s enable " + addons);
         }

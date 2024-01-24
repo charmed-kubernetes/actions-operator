@@ -118,7 +118,10 @@ async function microk8s_init(channel, addons, container_registry_url:string) {
     }
 
     // Add the given addons if any were given.
-    await exec_as_microk8s("microk8s status --wait-ready");
+    if (! await exec_as_microk8s("microk8s status --wait-ready --timeout 900")){
+        core.setFailed("microk8s couldn't become ready")
+        return false;
+    }
     if (addons) {
         await exec_as_microk8s("sudo microk8s enable " + addons);
     }
