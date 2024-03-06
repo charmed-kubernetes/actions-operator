@@ -5629,7 +5629,6 @@ function microk8s_init(channel, addons, container_registry_url) {
             yield exec_as_microk8s("microk8s kubectl delete serviceaccount test-sa");
         }
         yield retry_until_rc("microk8s kubectl auth can-i create pods");
-        yield retry_until_rc("microk8s kubectl auth can-i create pods --as=me", 1);
         return true;
     });
 }
