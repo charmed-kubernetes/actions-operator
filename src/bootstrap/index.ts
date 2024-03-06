@@ -150,7 +150,6 @@ async function microk8s_init(channel, addons, container_registry_url:string) {
     }
 
     await retry_until_rc("microk8s kubectl auth can-i create pods")
-    await retry_until_rc("microk8s kubectl auth can-i create pods --as=me", 1)
     return true;
 }
 
