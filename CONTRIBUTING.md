@@ -30,6 +30,8 @@ Building using npm:
 
 ```
 sudo apt install npm  # install npm, if needed
-npm install           # install / update dependencies
+export NODE_OPTIONS=--openssl-legacy-provider
+npm install           # install dependencies
 npm run build
 ```
+
