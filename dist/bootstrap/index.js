@@ -5674,7 +5674,7 @@ function run() {
         const juju_channel = core.getInput("juju-channel");
         const juju_bundle_channel = core.getInput("juju-bundle-channel");
         const juju_crashdump_channel = core.getInput("juju-crashdump-channel");
-        const lxd_channel = core.getInput("lxd-channel");
+        const lxd_channel = (provider === "lxd" && ![null, ""].includes(channel)) ? channel : core.getInput("lxd-channel");
         const microk8s_group = get_microk8s_group();
         let bootstrap_constraints = core.getInput("bootstrap-constraints");
         const microk8s_addons = core.getInput("microk8s-addons");
@@ -5730,10 +5730,9 @@ function run() {
             yield exec.exec("mkdir", ["-p", juju_dir]);
             let bootstrap_command = `juju bootstrap --debug --verbose ${provider} ${bootstrap_options}`;
             if (provider === "lxd") {
-                if ([null, ""].includes(channel) == false) {
-                    yield snap(`refresh lxd --channel=${channel}`);
-                }
+                core.startGroup("Preparing LXD Provider");
                 group = "lxd";
+                core.endGroup();
             }
             else if (provider === "microk8s") {
                 core.startGroup("Install microk8s");
@@ -5783,10 +5782,12 @@ function run() {
                 bootstrap_constraints = `${bootstrap_constraints} allocate-public-ip=true`;
             }
             else if (credentials_yaml != "") {
+                core.startGroup(`Preparing Provider ${provider} credentials`);
                 yield exec.exec("bash", ["-c", `echo "${credentials_yaml}" | base64 -d > ${juju_dir}/credentials.yaml`], options);
                 if (clouds_yaml != "") {
                     yield exec.exec("bash", ["-c", `echo "${clouds_yaml}" | base64 -d > ${juju_dir}/clouds.yaml`], options);
                 }
+                core.endGroup();
             }
             else {
                 core.setFailed(`Custom provider set without credentials: ${provider}`);
