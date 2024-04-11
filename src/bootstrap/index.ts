@@ -195,7 +195,7 @@ async function run() {
     const juju_bundle_channel = core.getInput("juju-bundle-channel");
     const juju_crashdump_channel = core.getInput("juju-crashdump-channel")
     
-    const lxd_channel = (provider === "lxd" && ! [null, ""].includes(channel)) ? channel : core.getInput("lxd-channel");
+    const lxd_channel = (provider === "lxd" && channel) ? channel : core.getInput("lxd-channel");
 
     const microk8s_group = get_microk8s_group();
     let bootstrap_constraints = core.getInput("bootstrap-constraints");
