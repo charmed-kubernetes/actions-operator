@@ -39,13 +39,16 @@ inputs:
   juju-channel:
     description: "snap channel for juju, installed via snap"
     required: false
-    default: "latest/stable"
+    default: "3/stable"
   juju-bundle-channel:
     description: "snap channel for juju bundle, installed via snap"
     required: false
     default: "latest/stable"
   lxd-channel:
-    description: "snap channel for lxd regardless of provider, installed via snap"
+    description: |-
+      snap channel for lxd, installed via snap
+
+      Ignored if inputs.provider="lxd" and inputs.channel is non-empty
     required: false
     default: "latest/stable"
   juju-crashdump-channel:

@@ -52,7 +52,7 @@ jobs:
           exit $?
 
   test-microk8s-strict:
-    name: Test microk8s environment
+    name: Test microk8s strict
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -75,7 +75,7 @@ jobs:
           tox -e tests -- -k "not machine"
 
   test-microk8s-classic:
-    name: Test microk8s classic environment
+    name: Test microk8s classic
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
