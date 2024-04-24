@@ -66,7 +66,7 @@ inputs:
   container-registry-url:
     description: "Container registry to use"
 runs:
-  using: "node16"
+  using: "node20"
   main: "dist/bootstrap/index.js"
   post: "dist/cleanup/index.js"
 branding:
