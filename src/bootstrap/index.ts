@@ -226,7 +226,9 @@ async function run() {
         await exec.exec('bash', ['-c', 'sudo usermod -a -G lxd $USER']);
         core.endGroup();
         core.startGroup("Install tox");
-        await apt_get("update -yqq");
+	// workaround for https://github.com/microsoft/linux-package-repositories/issues/130#issuecomment-2074645171
+        await exec.exec("sudo rm /etc/apt/sources.list.d/microsoft-prod.list");
+	await apt_get("update -yqq");
         await apt_get("install -yqq python3-pip");
         await exec.exec("sudo --preserve-env=http_proxy,https_proxy,no_proxy pip3 install tox");
         core.endGroup();
