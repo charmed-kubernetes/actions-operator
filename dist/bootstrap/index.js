@@ -5658,6 +5658,13 @@ function snap_install(name, channel = "", classic = true) {
         yield snap(args.join(" "));
     });
 }
+function fixed_revision_args(app, channel) {
+    const pinning = { "juju-bundle": 25, "jq": 6, "juju-crashdump": 271 };
+    if (!channel) {
+        return `--revision=${pinning[app]}`;
+    }
+    return `--channel=${channel}`;
+}
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
         const HOME = process.env["HOME"];
@@ -5712,11 +5719,11 @@ function run() {
             yield snap_install("juju", juju_channel, juju_channel.includes("2.9"));
             core.endGroup();
             core.startGroup("Install tools");
-            yield snap("install jq");
             yield snap(`install charm --classic --channel=${charm_channel}`);
             yield snap(`install charmcraft --classic --channel=${charmcraft_channel}`);
-            yield snap(`install juju-bundle --classic --channel=${juju_bundle_channel}`);
-            yield snap(`install juju-crashdump --classic --channel=${juju_crashdump_channel}`);
+            yield snap(`install jq ${fixed_revision_args("jq", "")}`);
+            yield snap(`install juju-bundle --classic ${fixed_revision_args("juju-bundle", juju_bundle_channel)}`);
+            yield snap(`install juju-crashdump --classic ${fixed_revision_args("juju-crashdump", juju_crashdump_channel)}`);
             const release = yield os_release();
             if (release["VERSION_CODENAME"].includes("jammy")) {
                 yield docker_lxd_clash();
