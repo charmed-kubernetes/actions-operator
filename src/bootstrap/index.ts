@@ -178,6 +178,14 @@ async function snap_install(name: string, channel: string="", classic: boolean=t
     await snap(args.join(" "))
 }
 
+function fixed_revision_args(app:string, channel:string): string{
+    const pinning = {"juju-bundle": 25, "jq": 6, "juju-crashdump": 271};
+    if (!channel) {
+        return `--revision=${pinning[app]}`
+    }
+    return `--channel=${channel}`
+}
+
 async function run() {
     const HOME = process.env["HOME"]
     const GITHUB_SHA = process.env["GITHUB_SHA"].slice(0, 5)
@@ -234,11 +242,14 @@ async function run() {
         await snap_install("juju", juju_channel, juju_channel.includes("2.9"));
         core.endGroup();
         core.startGroup("Install tools");
-        await snap("install jq");
         await snap(`install charm --classic --channel=${charm_channel}`);
         await snap(`install charmcraft --classic --channel=${charmcraft_channel}`);
-        await snap(`install juju-bundle --classic --channel=${juju_bundle_channel}`);
-        await snap(`install juju-crashdump --classic --channel=${juju_crashdump_channel}`)
+
+
+        await snap(`install jq ${fixed_revision_args("jq", "")}`);
+        await snap(`install juju-bundle --classic ${fixed_revision_args("juju-bundle", juju_bundle_channel)}`);
+        await snap(`install juju-crashdump --classic ${fixed_revision_args("juju-crashdump", juju_crashdump_channel)}`)
+
 
         const release = await os_release();
         if (release["VERSION_CODENAME"].includes("jammy")){

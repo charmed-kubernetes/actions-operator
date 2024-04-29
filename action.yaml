@@ -41,9 +41,11 @@ inputs:
     required: false
     default: "3/stable"
   juju-bundle-channel:
-    description: "snap channel for juju bundle, installed via snap"
+    description: |-
+      snap channel for juju bundle, installed via snap
+      if unset, uses a stable revision
     required: false
-    default: "latest/stable"
+    default: ""
   lxd-channel:
     description: |-
       snap channel for lxd, installed via snap
@@ -52,9 +54,11 @@ inputs:
     required: false
     default: "latest/stable"
   juju-crashdump-channel:
-    description: "snap channel for juju-crashdump, installed via snap"
+    description: |-
+      snap channel for juju-crashdump, installed via snap
+      if unset, uses a stable revision
     required: false
-    default: "latest/stable"
+    default: ""
   microk8s-group:
     description: "microk8s group name"
     required: false
