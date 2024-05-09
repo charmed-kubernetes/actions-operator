@@ -246,7 +246,7 @@ async function run() {
         await snap(`install charmcraft --classic --channel=${charmcraft_channel}`);
 
 
-        await snap(`install jq ${fixed_revision_args("jq", "")}`);
+        await apt_get("install -yqq jq");
         await snap(`install juju-bundle --classic ${fixed_revision_args("juju-bundle", juju_bundle_channel)}`);
         await snap(`install juju-crashdump --classic ${fixed_revision_args("juju-crashdump", juju_crashdump_channel)}`)
 
