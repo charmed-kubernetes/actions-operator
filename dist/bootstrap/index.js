@@ -5658,10 +5658,16 @@ function snap_install(name, channel = "", classic = true) {
         yield snap(args.join(" "));
     });
 }
-function fixed_revision_args(app, channel) {
-    const pinning = { "juju-bundle": 25, "jq": 6, "juju-crashdump": 271 };
+function fixed_revision_args(app, channel, arch) {
     if (!channel) {
-        return `--revision=${pinning[app]}`;
+        // Securely pin snap versions by arch
+        // snap versions are determined via API request to snapstore
+        // https://api.snapcraft.io/v2/snaps/info/<SNAP>?architecture=<ARCH>&fields=revision
+        const pinning = {
+            amd64: { "juju-bundle": 25, jq: 6, "juju-crashdump": 271 },
+            arm64: { "juju-bundle": 25, jq: 8, "juju-crashdump": 272 }
+        };
+        return `--revision=${pinning[arch.trim()][app]}`;
     }
     return `--channel=${channel}`;
 }
@@ -5721,9 +5727,13 @@ function run() {
             core.startGroup("Install tools");
             yield snap(`install charm --classic --channel=${charm_channel}`);
             yield snap(`install charmcraft --classic --channel=${charmcraft_channel}`);
-            yield snap(`install jq ${fixed_revision_args("jq", "")}`);
-            yield snap(`install juju-bundle --classic ${fixed_revision_args("juju-bundle", juju_bundle_channel)}`);
-            yield snap(`install juju-crashdump --classic ${fixed_revision_args("juju-crashdump", juju_crashdump_channel)}`);
+            let arch = "";
+            const dpkg = _retryable_exec("dpkg");
+            const dpkg_output = { listeners: { stdout: (data) => { arch += data.toString(); } } };
+            yield dpkg("--print-architecture", [], dpkg_output);
+            yield snap(`install jq ${fixed_revision_args("jq", "", arch)}`);
+            yield snap(`install juju-bundle --classic ${fixed_revision_args("juju-bundle", juju_bundle_channel, arch)}`);
+            yield snap(`install juju-crashdump --classic ${fixed_revision_args("juju-crashdump", juju_crashdump_channel, arch)}`);
             const release = yield os_release();
             if (release["VERSION_CODENAME"].includes("jammy")) {
                 yield docker_lxd_clash();
