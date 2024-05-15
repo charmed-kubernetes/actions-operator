@@ -5721,7 +5721,7 @@ function run() {
             core.startGroup("Install tools");
             yield snap(`install charm --classic --channel=${charm_channel}`);
             yield snap(`install charmcraft --classic --channel=${charmcraft_channel}`);
-            yield snap(`install jq ${fixed_revision_args("jq", "")}`);
+            yield apt_get("install -yqq jq");
             yield snap(`install juju-bundle --classic ${fixed_revision_args("juju-bundle", juju_bundle_channel)}`);
             yield snap(`install juju-crashdump --classic ${fixed_revision_args("juju-crashdump", juju_crashdump_channel)}`);
             const release = yield os_release();
