@@ -29,7 +29,7 @@ We have adopted the Ubuntu code of Conduct. You can read this in full
 Building using npm:
 
 ```
-sudo apt install npm  # install npm, if needed
-npm install           # install / update dependencies
-npm run build
+sudo snap install node --channel 20/stable              # installs npm
+npm install                                             # install / update dependencies
+NODE_OPTIONS=--openssl-legacy-provider npm run build    # Run the build
 ```
