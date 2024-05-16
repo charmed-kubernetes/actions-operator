@@ -178,10 +178,16 @@ async function snap_install(name: string, channel: string="", classic: boolean=t
     await snap(args.join(" "))
 }
 
-function fixed_revision_args(app:string, channel:string): string{
-    const pinning = {"juju-bundle": 25, "jq": 6, "juju-crashdump": 271};
+function fixed_revision_args(app:string, channel:string, arch:string): string{
     if (!channel) {
-        return `--revision=${pinning[app]}`
+        // Securely pin snap versions by arch
+        // snap versions are determined via API request to snapstore
+        // https://api.snapcraft.io/v2/snaps/info/<SNAP>?architecture=<ARCH>&fields=revision
+        const pinning = {
+            amd64: {"juju-bundle": 25, jq: 6, "juju-crashdump": 271},
+            arm64: {"juju-bundle": 25, jq: 8, "juju-crashdump": 272}
+        };
+        return `--revision=${pinning[arch.trim()][app]}`
     }
     return `--channel=${channel}`
 }
@@ -245,10 +251,13 @@ async function run() {
         await snap(`install charm --classic --channel=${charm_channel}`);
         await snap(`install charmcraft --classic --channel=${charmcraft_channel}`);
 
-
-        await snap(`install jq ${fixed_revision_args("jq", "")}`);
-        await snap(`install juju-bundle --classic ${fixed_revision_args("juju-bundle", juju_bundle_channel)}`);
-        await snap(`install juju-crashdump --classic ${fixed_revision_args("juju-crashdump", juju_crashdump_channel)}`)
+        let arch = "";
+        const dpkg = _retryable_exec("dpkg");
+        const dpkg_output = {listeners:{stdout: (data: Buffer) => {arch += data.toString();}}};
+        await dpkg("--print-architecture", [], dpkg_output)
+        await snap(`install jq ${fixed_revision_args("jq", "", arch)}`);
+        await snap(`install juju-bundle --classic ${fixed_revision_args("juju-bundle", juju_bundle_channel, arch)}`);
+        await snap(`install juju-crashdump --classic ${fixed_revision_args("juju-crashdump", juju_crashdump_channel, arch)}`)
 
 
         const release = await os_release();
