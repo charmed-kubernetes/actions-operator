@@ -5671,6 +5671,29 @@ function fixed_revision_args(app, channel, arch) {
     }
     return `--channel=${channel}`;
 }
+function install_tox(tox_version = "") {
+    return __awaiter(this, void 0, void 0, function* () {
+        // Install tox if it's not already installed
+        const hasTox = yield exec.exec("which tox", [], ignoreFail);
+        if (hasTox == 0) {
+            core.info("tox is already installed");
+            exec.exec("tox --version");
+            return;
+        }
+        const hasPip = yield exec.exec("which pip", [], ignoreFail);
+        const version = tox_version ? `==${tox_version}` : "";
+        if (hasPip == 0) {
+            core.info(`pip is available, install tox${version}`);
+            yield exec.exec(`pip install tox${version}`);
+        }
+        else {
+            core.info("Neither tox nor pip are available, install python3-pip via apt, then tox");
+            yield apt_get("update -yqq");
+            yield apt_get("install -yqq python3-pip");
+            yield exec.exec(`sudo --preserve-env=http_proxy,https_proxy,no_proxy pip3 install tox${version}`);
+        }
+    });
+}
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
         const HOME = process.env["HOME"];
@@ -5687,6 +5710,7 @@ function run() {
         const juju_channel = core.getInput("juju-channel");
         const juju_bundle_channel = core.getInput("juju-bundle-channel");
         const juju_crashdump_channel = core.getInput("juju-crashdump-channel");
+        const tox_version = core.getInput("tox-version");
         const lxd_channel = (provider === "lxd" && channel) ? channel : core.getInput("lxd-channel");
         const microk8s_group = get_microk8s_group();
         let bootstrap_constraints = core.getInput("bootstrap-constraints");
@@ -5717,9 +5741,7 @@ function run() {
             yield exec.exec('bash', ['-c', 'sudo usermod -a -G lxd $USER']);
             core.endGroup();
             core.startGroup("Install tox");
-            yield apt_get("update -yqq");
-            yield apt_get("install -yqq python3-pip");
-            yield exec.exec("sudo --preserve-env=http_proxy,https_proxy,no_proxy pip3 install tox");
+            yield install_tox(tox_version);
             core.endGroup();
             core.startGroup("Install Juju");
             yield snap_install("juju", juju_channel, juju_channel.includes("2.9"));
