@@ -18,6 +18,34 @@ jobs:
           reporter: github-pr-check
           fail-on-error: true
 
+
+  test-python-pre-installed:
+    name: Test pre-installed-python environment
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python:
+          - '3.8'
+          - '3.10'
+          - '3.12'
+    steps:
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Check out code
+        uses: actions/checkout@v4
+      - uses: ./
+        with:
+          provider: lxd
+          channel: latest/stable
+          juju-channel: 3/stable
+      - name: Run Tests for != 3.x
+        run: |
+          tox -e tests -- -k "not k8s"
+          exit $?
+  
+
   test-lxd:
     name: Test lxd environment
     runs-on: ${{ matrix.os }}

@@ -67,6 +67,10 @@ inputs:
     description: "microk8s addons to enable"
     required: false
     default: "storage dns rbac"
+  tox-version:
+    description: "Version of tox to install"
+    required: false
+    default: ""
   container-registry-url:
     description: "Container registry to use"
 runs:

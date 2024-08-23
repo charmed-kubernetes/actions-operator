@@ -192,6 +192,29 @@ function fixed_revision_args(app:string, channel:string, arch:string): string{
     return `--channel=${channel}`
 }
 
+
+async function install_tox(tox_version: string = "") {
+    // Install tox if it's not already installed
+    const hasTox = await exec.exec("which tox", [], ignoreFail);
+    if (hasTox == 0) {
+        core.info("tox is already installed");
+        exec.exec("tox --version");
+        return;
+    }
+    const hasPip = await exec.exec("which pip", [], ignoreFail);
+    const version = tox_version ? `==${tox_version}` : "";
+    if (hasPip == 0) {
+        core.info(`pip is available, install tox${version}`);
+        await exec.exec(`pip install tox${version}`);
+    } else {
+        core.info("Neither tox nor pip are available, install python3-pip via apt, then tox");
+        await apt_get("update -yqq");
+        await apt_get("install -yqq python3-pip");
+        await exec.exec(`sudo --preserve-env=http_proxy,https_proxy,no_proxy pip3 install tox${version}`);
+    }
+}
+
+
 async function run() {
     const HOME = process.env["HOME"]
     const GITHUB_SHA = process.env["GITHUB_SHA"].slice(0, 5)
@@ -208,6 +231,7 @@ async function run() {
     const juju_channel = core.getInput("juju-channel");
     const juju_bundle_channel = core.getInput("juju-bundle-channel");
     const juju_crashdump_channel = core.getInput("juju-crashdump-channel")
+    const tox_version = core.getInput("tox-version");
     
     const lxd_channel = (provider === "lxd" && channel) ? channel : core.getInput("lxd-channel");
 
@@ -240,9 +264,7 @@ async function run() {
         await exec.exec('bash', ['-c', 'sudo usermod -a -G lxd $USER']);
         core.endGroup();
         core.startGroup("Install tox");
-        await apt_get("update -yqq");
-        await apt_get("install -yqq python3-pip");
-        await exec.exec("sudo --preserve-env=http_proxy,https_proxy,no_proxy pip3 install tox");
+        await install_tox(tox_version);
         core.endGroup();
         core.startGroup("Install Juju");
         await snap_install("juju", juju_channel, juju_channel.includes("2.9"));
