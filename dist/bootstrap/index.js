@@ -5757,7 +5757,8 @@ function run() {
             yield snap(`install juju-bundle --classic ${fixed_revision_args("juju-bundle", juju_bundle_channel, arch)}`);
             yield snap(`install juju-crashdump --classic ${fixed_revision_args("juju-crashdump", juju_crashdump_channel, arch)}`);
             const release = yield os_release();
-            if (release["VERSION_CODENAME"].includes("jammy")) {
+            let version_id = semver_1.default.coerce(release["VERSION_ID"], { loose: true });
+            if (version_id && version_id.compare('22.4.0') >= 0) {
                 yield docker_lxd_clash();
             }
             core.endGroup();

@@ -283,7 +283,8 @@ async function run() {
 
 
         const release = await os_release();
-        if (release["VERSION_CODENAME"].includes("jammy")){
+        let version_id = semver.coerce(release["VERSION_ID"], {loose: true});
+        if (version_id && version_id.compare('22.4.0') >= 0) {
             await docker_lxd_clash();
         }
 
