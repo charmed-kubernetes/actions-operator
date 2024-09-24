@@ -5557,7 +5557,8 @@ function get_microk8s_group() {
 }
 function exec_as_microk8s(cmd, options = {}) {
     return __awaiter(this, void 0, void 0, function* () {
-        return yield exec.exec(`sudo -u ${user} -E ${cmd}`, [], options);
+        let group = get_microk8s_group();
+        return yield exec.exec(`sudo -g ${group} -E ${cmd}`, [], options);
     });
 }
 function retry_until_rc(cmd, expected_rc = 0, maxRetries = 12, timeout = 10000) {
@@ -5850,7 +5851,7 @@ function run() {
             core.startGroup("Bootstrap controller");
             bootstrap_command = `${bootstrap_command} --bootstrap-constraints="${bootstrap_constraints}"`;
             if (group !== "") {
-                yield exec.exec(`sudo -u ${user} -E ${bootstrap_command}`);
+                yield exec.exec(`sudo -g ${group} -E ${bootstrap_command}`);
             }
             else {
                 yield exec.exec(bootstrap_command);

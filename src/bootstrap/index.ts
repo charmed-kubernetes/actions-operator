@@ -35,7 +35,7 @@ const snap_version = async (snap_name: string) => {
     let stdout_buf = '';
     const options = {
         listeners: {
-            stdout: (data) => { stdout_buf += data.toString() }
+            stdout: (data: Buffer) => { stdout_buf += data.toString() }
         }
     };
     await exec.exec("snap", ["list", snap_name], options);
@@ -75,7 +75,8 @@ function get_microk8s_group() {
 
 
 async function exec_as_microk8s(cmd: string, options = {}) {
-    return await exec.exec(`sudo -u ${user} -E ${cmd}`, [], options);
+    let group = get_microk8s_group();
+    return await exec.exec(`sudo -g ${group} -E ${cmd}`, [], options);
 }
 
 async function retry_until_rc(cmd: string, expected_rc=0, maxRetries=12, timeout=10000) {
@@ -374,7 +375,7 @@ async function run() {
         core.startGroup("Bootstrap controller");
         bootstrap_command = `${bootstrap_command} --bootstrap-constraints="${bootstrap_constraints}"`
         if (group !== "") {
-            await exec.exec(`sudo -u ${user} -E ${bootstrap_command}`);
+            await exec.exec(`sudo -g ${group} -E ${bootstrap_command}`);
         } else {
             await exec.exec(bootstrap_command);
         }
