@@ -250,7 +250,7 @@ jobs:
         # The `CONTROLLER_NAME` envvar is set by this actions
         run: echo "name=$CONTROLLER_NAME" >> $GITHUB_OUTPUT
       - name: Setup lxd controller
-        uses: charmed-kubernetes/actions-operator@main
+        uses: ./
         with:
           provider: lxd
       - name: Save lxd controller name
