@@ -5492,10 +5492,12 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 const core = __importStar(__nccwpck_require__(2186));
 const exec = __importStar(__nccwpck_require__(1514));
+const os = __importStar(__nccwpck_require__(2087));
 const utils_1 = __nccwpck_require__(2828);
 const semver_1 = __importDefault(__nccwpck_require__(1383));
 const ts_dedent_1 = __importDefault(__nccwpck_require__(3604));
 const ignoreFail = { "ignoreReturnCode": true };
+const user = os.userInfo().username;
 const os_release = () => __awaiter(void 0, void 0, void 0, function* () {
     // Read os-release file into an object
     let stdout_buf = '';
@@ -5511,6 +5513,24 @@ const os_release = () => __awaiter(void 0, void 0, void 0, function* () {
         data[key] = value;
     });
     return data;
+});
+const snap_version = (snap_name) => __awaiter(void 0, void 0, void 0, function* () {
+    let stdout_buf = '';
+    const options = {
+        listeners: {
+            stdout: (data) => { stdout_buf += data.toString(); }
+        }
+    };
+    yield exec.exec("snap", ["list", snap_name], options);
+    const lines = stdout_buf.split('\n');
+    if (lines.length < 2) {
+        throw new Error(`snap ${snap_name} not found`);
+    }
+    const snap_line = lines[1].split(/\s+/);
+    if (snap_line.length < 2) {
+        throw new Error(`snap ${snap_name} version not found`);
+    }
+    return snap_line[1];
 });
 const docker_lxd_clash = () => __awaiter(void 0, void 0, void 0, function* () {
     // Work-around clash between docker and lxd on jammy
@@ -5537,8 +5557,8 @@ function get_microk8s_group() {
 }
 function exec_as_microk8s(cmd, options = {}) {
     return __awaiter(this, void 0, void 0, function* () {
-        const microk8s_group = get_microk8s_group();
-        return yield exec.exec('sg', [microk8s_group, '-c', cmd], options);
+        let group = get_microk8s_group();
+        return yield exec.exec(`sudo -g ${group} -E ${cmd}`, [], options);
     });
 }
 function retry_until_rc(cmd, expected_rc = 0, maxRetries = 12, timeout = 10000) {
@@ -5598,15 +5618,10 @@ function microk8s_init(channel, addons, container_registry_url) {
         // Add the given addons if any were given.
         yield exec_as_microk8s("microk8s status --wait-ready --timeout=600");
         if (addons) {
-            yield exec_as_microk8s("sudo microk8s enable " + addons);
+            yield exec.exec(`sudo microk8s enable ${addons}`);
         }
-        let stdout_buf = '';
-        const options = {
-            listeners: {
-                stdout: (data) => { stdout_buf += data.toString(); }
-            }
-        };
-        yield exec_as_microk8s("snap list microk8s | grep microk8s | awk '{ print $2 }'", options);
+        // get microk8s version
+        const mk8s_ver = yield snap_version("microk8s");
         // workarounds for https://bugs.launchpad.net/juju/+bug/1937282
         if (!(yield retry_until_rc("microk8s kubectl -n kube-system rollout status deployment/coredns"))) {
             core.setFailed("Timed out waiting for CoreDNS");
@@ -5618,7 +5633,7 @@ function microk8s_init(channel, addons, container_registry_url) {
             return false;
         }
         ;
-        if (semver_1.default.lt(stdout_buf, '1.24.0')) {
+        if (semver_1.default.lt(mk8s_ver, '1.24.0')) {
             yield exec_as_microk8s("microk8s kubectl create serviceaccount test-sa");
             if (!(yield retry_until_rc("microk8s kubectl get secrets | grep -q test-sa-token-"))) {
                 core.setFailed("Timed out waiting for test SA token");
@@ -5738,7 +5753,7 @@ function run() {
             yield exec.exec("sudo lxd init --auto");
             yield exec.exec("sudo chmod a+wr /var/snap/lxd/common/lxd/unix.socket");
             yield exec.exec("lxc network set lxdbr0 ipv6.address none");
-            yield exec.exec('bash', ['-c', 'sudo usermod -a -G lxd $USER']);
+            yield exec.exec(`sudo usermod -a -G lxd ${user}`);
             core.endGroup();
             core.startGroup("Install tox");
             yield install_tox(tox_version);
@@ -5757,7 +5772,8 @@ function run() {
             yield snap(`install juju-bundle --classic ${fixed_revision_args("juju-bundle", juju_bundle_channel, arch)}`);
             yield snap(`install juju-crashdump --classic ${fixed_revision_args("juju-crashdump", juju_crashdump_channel, arch)}`);
             const release = yield os_release();
-            if (release["VERSION_CODENAME"].includes("jammy")) {
+            let version_id = semver_1.default.coerce(release["VERSION_ID"], { loose: true });
+            if (version_id && version_id.compare('22.4.0') >= 0) {
                 yield docker_lxd_clash();
             }
             core.endGroup();
@@ -5783,7 +5799,7 @@ function run() {
                 }
                 core.endGroup();
                 core.startGroup("Initialize microk8s");
-                yield exec.exec('bash', ['-c', `sudo usermod -a -G ${microk8s_group} $USER`]);
+                yield exec.exec(`sudo usermod -a -G ${microk8s_group} ${user}`);
                 if (!(yield microk8s_init(channel, microk8s_addons, container_registry_url))) {
                     return;
                 }
@@ -5835,7 +5851,7 @@ function run() {
             core.startGroup("Bootstrap controller");
             bootstrap_command = `${bootstrap_command} --bootstrap-constraints="${bootstrap_constraints}"`;
             if (group !== "") {
-                yield exec.exec('sg', [group, '-c', bootstrap_command]);
+                yield exec.exec(`sudo -g ${group} -E ${bootstrap_command}`);
             }
             else {
                 yield exec.exec(bootstrap_command);
