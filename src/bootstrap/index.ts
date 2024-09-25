@@ -1,6 +1,7 @@
 import * as core from '@actions/core';
 import * as exec from '@actions/exec';
 import * as os from 'os'
+import * as fs from 'fs';
 import { retryAsyncDecorator } from 'ts-retry/lib/cjs/retry/utils';
 import semver from 'semver';
 import dedent from 'ts-dedent';
@@ -14,17 +15,21 @@ declare var process : {
 const ignoreFail: exec.ExecOptions = {"ignoreReturnCode": true}
 const user = os.userInfo().username
 
+const checkOutput = async (cmd: string, args?: string[], options?: exec.ExecOptions) => {
+    let stdout_buf = '';
+    options = options || {};
+    options.listeners = {
+        stdout: (data: Buffer) => { stdout_buf += data.toString() }
+    };
+    await exec.exec(cmd, args, options);
+    return stdout_buf
+}
+
 const os_release = async () => {
     // Read os-release file into an object
-    let stdout_buf = '';
-    const options = {
-        listeners: {
-            stdout: (data: Buffer) => { stdout_buf += data.toString() }
-        }
-    };
-    await exec.exec('cat', ['/etc/os-release'], options);
+    const output = await checkOutput('cat', ['/etc/os-release']);
     let data: { [name:string]: string} = {};
-    stdout_buf.split('\n').forEach(function(line){
+    output.split('\n').forEach(function(line){
         let [key, value] = line.split("=", 2);
         data[key] = value
     })
@@ -32,14 +37,9 @@ const os_release = async () => {
 }
 
 const snap_version = async (snap_name: string) => {
-    let stdout_buf = '';
-    const options = {
-        listeners: {
-            stdout: (data: Buffer) => { stdout_buf += data.toString() }
-        }
-    };
-    await exec.exec("snap", ["list", snap_name], options);
-    const lines = stdout_buf.split('\n');
+    // Get the version of a snap
+    const output = await checkOutput("snap", ["list", snap_name, "--color=never"]);
+    const lines = output.split('\n');
     if (lines.length < 2) {
         throw new Error(`snap ${snap_name} not found`)
     }
@@ -48,6 +48,19 @@ const snap_version = async (snap_name: string) => {
         throw new Error(`snap ${snap_name} version not found`)
     }
     return snap_line[1]
+}
+
+const microk8sKubeConfig = async () => {
+    // Get kubeconfig from microk8s
+    let kubeconfig = ""
+    let options = {
+        silent: true,
+        listeners: {
+            stdout: (data: Buffer) => { kubeconfig += data.toString() }
+        }
+    };
+    await exec_as_microk8s("microk8s config", options);
+    fs.writeFileSync(`${os.homedir()}/.kube/config`, kubeconfig, {encoding: 'utf8'});
 }
 
 const docker_lxd_clash = async () => {
@@ -158,7 +171,7 @@ async function microk8s_init(channel, addons, container_registry_url:string) {
     };
     if (semver.lt(mk8s_ver, '1.24.0')) {
         await exec_as_microk8s("microk8s kubectl create serviceaccount test-sa");
-        if (! await retry_until_rc("microk8s kubectl get secrets | grep -q test-sa-token-")) {
+        if (! await retry_until_rc("bash -c 'microk8s kubectl get secrets | grep -q test-sa-token-'")) {
             core.setFailed("Timed out waiting for test SA token");
             return false;
         };
@@ -394,7 +407,7 @@ async function run() {
         await snap("install kubectl --classic");
         await exec.exec("mkdir", ["-p", `${HOME}/.kube`]);
         if (provider === "microk8s") {
-            await exec_as_microk8s(`microk8s config > ${HOME}/.kube/config`);
+            await microk8sKubeConfig();
         }
         core.endGroup();
     } catch(error: any) {
