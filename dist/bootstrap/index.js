@@ -5493,36 +5493,35 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 const core = __importStar(__nccwpck_require__(2186));
 const exec = __importStar(__nccwpck_require__(1514));
 const os = __importStar(__nccwpck_require__(2087));
+const fs = __importStar(__nccwpck_require__(5747));
 const utils_1 = __nccwpck_require__(2828);
 const semver_1 = __importDefault(__nccwpck_require__(1383));
 const ts_dedent_1 = __importDefault(__nccwpck_require__(3604));
 const ignoreFail = { "ignoreReturnCode": true };
 const user = os.userInfo().username;
+const checkOutput = (cmd, args, options) => __awaiter(void 0, void 0, void 0, function* () {
+    let stdout_buf = '';
+    options = options || {};
+    options.listeners = {
+        stdout: (data) => { stdout_buf += data.toString(); }
+    };
+    yield exec.exec(cmd, args, options);
+    return stdout_buf;
+});
 const os_release = () => __awaiter(void 0, void 0, void 0, function* () {
     // Read os-release file into an object
-    let stdout_buf = '';
-    const options = {
-        listeners: {
-            stdout: (data) => { stdout_buf += data.toString(); }
-        }
-    };
-    yield exec.exec('cat', ['/etc/os-release'], options);
+    const output = yield checkOutput('cat', ['/etc/os-release']);
     let data = {};
-    stdout_buf.split('\n').forEach(function (line) {
+    output.split('\n').forEach(function (line) {
         let [key, value] = line.split("=", 2);
         data[key] = value;
     });
     return data;
 });
 const snap_version = (snap_name) => __awaiter(void 0, void 0, void 0, function* () {
-    let stdout_buf = '';
-    const options = {
-        listeners: {
-            stdout: (data) => { stdout_buf += data.toString(); }
-        }
-    };
-    yield exec.exec("snap", ["list", snap_name], options);
-    const lines = stdout_buf.split('\n');
+    // Get the version of a snap
+    const output = yield checkOutput("snap", ["list", snap_name, "--color=never"]);
+    const lines = output.split('\n');
     if (lines.length < 2) {
         throw new Error(`snap ${snap_name} not found`);
     }
@@ -5531,6 +5530,18 @@ const snap_version = (snap_name) => __awaiter(void 0, void 0, void 0, function* 
         throw new Error(`snap ${snap_name} version not found`);
     }
     return snap_line[1];
+});
+const microk8sKubeConfig = () => __awaiter(void 0, void 0, void 0, function* () {
+    // Get kubeconfig from microk8s
+    let kubeconfig = "";
+    let options = {
+        silent: true,
+        listeners: {
+            stdout: (data) => { kubeconfig += data.toString(); }
+        }
+    };
+    yield exec_as_microk8s("microk8s config", options);
+    fs.writeFileSync(`${os.homedir()}/.kube/config`, kubeconfig, { encoding: 'utf8' });
 });
 const docker_lxd_clash = () => __awaiter(void 0, void 0, void 0, function* () {
     // Work-around clash between docker and lxd on jammy
@@ -5635,7 +5646,7 @@ function microk8s_init(channel, addons, container_registry_url) {
         ;
         if (semver_1.default.lt(mk8s_ver, '1.24.0')) {
             yield exec_as_microk8s("microk8s kubectl create serviceaccount test-sa");
-            if (!(yield retry_until_rc("microk8s kubectl get secrets | grep -q test-sa-token-"))) {
+            if (!(yield retry_until_rc("bash -c 'microk8s kubectl get secrets | grep -q test-sa-token-'"))) {
                 core.setFailed("Timed out waiting for test SA token");
                 return false;
             }
@@ -5871,7 +5882,7 @@ function run() {
             yield snap("install kubectl --classic");
             yield exec.exec("mkdir", ["-p", `${HOME}/.kube`]);
             if (provider === "microk8s") {
-                yield exec_as_microk8s(`microk8s config > ${HOME}/.kube/config`);
+                yield microk8sKubeConfig();
             }
             core.endGroup();
         }
