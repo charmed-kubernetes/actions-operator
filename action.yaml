@@ -2,6 +2,12 @@ name: "Setup Operator environment"
 description: "Setup a operator environment"
 author: "Adam Stokes"
 inputs:
+  concierge-version:
+    description: |
+      Version of concierge to install
+      https://github.com/jnsgruk/concierge/releases
+    required: false
+    default: "latest"
   provider:
     description: |
       Which Juju provider to use. Can be "lxd", "microk8s" or "microstack",
@@ -79,6 +85,7 @@ runs:
     - name: Cache
       uses: ./.github/actions/with-post-steps
       with:
+        json: ${{ toJson(inputs) }}
         main: "src/bootstrap/main.sh"
         post: "src/cleanup/main.sh"
 branding:
