@@ -74,9 +74,13 @@ inputs:
   container-registry-url:
     description: "Container registry to use"
 runs:
-  using: "node20"
-  main: "dist/bootstrap/index.js"
-  post: "dist/cleanup/index.js"
+  using: "composite"
+  steps:
+    - name: Cache
+      uses: ./.github/actions/with-post-steps
+      with:
+        main: "src/bootstrap/main.sh"
+        post: "src/cleanup/main.sh"
 branding:
   icon: "play"
   color: "blue"
