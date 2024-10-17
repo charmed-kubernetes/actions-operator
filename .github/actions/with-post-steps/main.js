@@ -4,7 +4,7 @@ const { appendFileSync } = require("fs");
 const { EOL } = require("os");
 
 function run(cmd) {
-  const subprocess = spawn(cmd, { stdio: "inherit", shell: true });
+  const subprocess = spawn(cmd, { stdio: "inherit", shell: true, env: process.env });
   subprocess.on("exit", (exitCode) => {
     process.exitCode = exitCode;
   });

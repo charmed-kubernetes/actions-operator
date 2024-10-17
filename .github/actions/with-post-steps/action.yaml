@@ -10,6 +10,9 @@ inputs:
   post:
     description: "Post command/script."
     required: true
+  json:
+    description: "Inputs to pass through to the main command."
+    required: true
   key:
     description: "Name of the state variable used to detect the post step."
     required: false
