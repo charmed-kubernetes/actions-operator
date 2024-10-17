@@ -26,8 +26,9 @@ function prepare_snapd(){
     _wait_snapd_seed
     set -x
     sudo snap list
-    sudo snap install snapd && sudo snap refresh snapd
-    sudo snap remove --purge lxd || true
+    # sudo snap install snapd && sudo snap refresh snapd
+    # sudo snap remove --purge lxd || true
+    sudo snap stop lxd || true  # rather than purge, stop lxd if it's running
     set +x
     echo "::endgroup::"
 }
