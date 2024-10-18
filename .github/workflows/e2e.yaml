@@ -1,9 +1,9 @@
 name: Test Operator Setup
 on:
   push:
-    branches: [main]
+    branches: [main, concierge]
   pull_request:
-    branches: [main]
+    branches: [main, concierge]
 
 jobs:
   Inclusive-naming-check:
@@ -34,6 +34,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [charmcraft]
     strategy:
+      fail-fast: false
       matrix:
         python:
           - '3.8'
@@ -67,17 +68,20 @@ jobs:
     needs: [charmcraft]
     runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
+        lxd:
+          - '5.21'
+          - '6.1'
+          - 'latest'
         os:
           - ubuntu-20.04
           - ubuntu-22.04
           - ubuntu-24.04
         juju:
           - '2.9/stable'
-          - '3.1/stable'
-          - '3.3/stable'
-          - '3.4/stable'
-          - '3.5/edge'
+          - '3.5/stable'
+          - '3/stable'
     steps:
       - name: Check out code
         uses: actions/checkout@v4
@@ -89,7 +93,7 @@ jobs:
       - uses: ./
         with:
           provider: lxd
-          channel: latest/stable
+          channel: ${{ matrix.lxd }}/stable
           juju-channel: ${{ matrix.juju }}
           charmcraft-channel: ${{ needs.charmcraft.outputs.channel }}
 
@@ -110,6 +114,7 @@ jobs:
     needs: [charmcraft]
     runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
         os:
           - ubuntu-20.04
@@ -141,6 +146,7 @@ jobs:
     needs: [charmcraft]
     runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
         os:
           - ubuntu-20.04
@@ -226,6 +232,7 @@ jobs:
     needs: [charmcraft]
     runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
         os:
           - ubuntu-20.04
@@ -259,5 +266,6 @@ jobs:
         run: echo "name=$CONTROLLER_NAME" >> $GITHUB_OUTPUT
       - name: Test we can switch to the controllers
         run: |
+          set -eu
           juju switch ${{ steps.k8s-controller.outputs.name }}
           juju switch ${{ steps.lxd-controller.outputs.name }}
