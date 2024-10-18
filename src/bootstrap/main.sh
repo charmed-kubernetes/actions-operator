@@ -12,59 +12,58 @@ function _get_input() {
 
 # waitSnapdSeed: wait for snapd to be seeded.
 # Optional argument: timeout in seconds, defaults to 60.
-function _wait_snapd_seed() (
+function wait_snapd_seed() (
+  echo "::group::Waiting for snapd seed..."
   waitSecs="${1:-60}"
-  if timeout "${waitSecs}" sudo snap wait system seed.loaded; then
-    return 0 # Success.
-  fi
-  echo "snapd not seeded after ${waitSecs}s"
-  return 1 # Failed.
+  timeout "${waitSecs}" sudo snap wait system seed.loaded
+  echo "::endgroup::"
 )
 
-function prepare_snapd(){
-    echo "::group::Preparing snapd..."
-    _wait_snapd_seed
-    set -x
-    sudo snap list
-    # sudo snap install snapd && sudo snap refresh snapd
-    # sudo snap remove --purge lxd || true
-    sudo snap stop lxd || true  # rather than purge, stop lxd if it's running
-    set +x
+function prepare_lxd(){
+    echo "::group::Preparing lxd..."
+    local lxd_channel=""
+    _get_input lxd_channel "lxd-channel"
+    
+    local current_lxd_channel="$(snap list lxd | grep lxd | awk '{ print $4 }' || true)"
+    if [ "${current_lxd_channel}" != "${lxd_channel}" ]; then
+        # rather than purge, stop lxd if it's running
+        echo "Stopping lxd before refreshing to $lxd_channel with concierge..."
+        sudo snap stop lxd || true
+    else
+        echo "lxd is already at the desired channel: $lxd_channel"
+    fi
     echo "::endgroup::"
 }
 
 function install_concierge() {
     # The following will eventually just be snap install concierge
-    local concierge_version=""
-    _get_input concierge_version "concierge-version" "latest"
+    local concierge_channel=""
+    _get_input concierge_version "concierge-channel" "latest/stable"
 
-    echo "::group::Installing concierge ${concierge_version}..."
-    export PATH=$PATH:$HOME/go/bin
-    sudo snap install go --classic
-    go install github.com/jnsgruk/concierge@${concierge_version}
+    echo "::group::Installing concierge ${concierge_channel}..."
+    sudo snap install concierge --channel="${concierge_channel}" --classic
     echo "::endgroup::"
 }
-
 
 function install_tox_if_needed() {
     local version=""
     _get_input version "tox-version"
-    echo "Ensuring tox installed..."
+    echo "::group::Installing tox..."
 
     if command -v tox &> /dev/null; then
-        echo "tox is already installed"
+        echo "Tox is already installed"
         tox --version
     elif command -v pip &> /dev/null; then
-        echo "::group::Installing tox with pip..."
+        echo "Installing tox with pip..."
         TOX_VERSION_ARG=$([ -n "$version" ] && echo "==$version" || echo "")
         pip install tox$TOX_VERSION_ARG
         echo "::endgroup::"
     else
-        echo "::group::Installing tox with apt..."
+        echo "Installing tox with apt..."
         sudo apt-get update
         sudo apt-get install python3-tox
-        echo "::endgroup::"
     fi
+    echo "::endgroup::"
 }
 
 function plan_concierge() {
@@ -130,27 +129,25 @@ EOF
     echo "::group::Concierge (concierge.yaml):"
     cat concierge.yaml
     echo "::endgroup::"
+}
 
-    echo "::group::Concierge (environment):"
-    printenv | sort | grep -i concierge
-    echo "::endgroup::"
-
+function prepare_concierge() {
     echo "::group::Running concierge..."
-    set -x
-    sudo -E $HOME/go/bin/concierge prepare --trace -v
-    set +x
-    echo "::endgroup::"
-
+    sudo -E concierge prepare --trace -v
     echo "Concierge run complete."
+
     local CONTROLLER_NAME=$(juju controllers --format json | jq -r '.["current-controller"]')
     echo "CONTROLLER_NAME=${CONTROLLER_NAME}" | tee -a "${GITHUB_ENV}" "${GITHUB_STATE}"
+    echo "::endgroup::"
 }
 
 function run() {
-    prepare_snapd
+    wait_snapd_seed
+    prepare_lxd
     install_concierge
     install_tox_if_needed
     plan_concierge
+    prepare_concierge
 }
 
 run

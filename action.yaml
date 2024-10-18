@@ -2,12 +2,12 @@ name: "Setup Operator environment"
 description: "Setup a operator environment"
 author: "Adam Stokes"
 inputs:
-  concierge-version:
+  concierge-channel:
     description: |
-      Version of concierge to install
-      https://github.com/jnsgruk/concierge/releases
+      Channel of concierge to install
+      https://snapcraft.io/concierge
     required: false
-    default: "latest"
+    default: "latest/stable"
   provider:
     description: |
       Which Juju provider to use. Can be "lxd", "microk8s" or "microstack",
