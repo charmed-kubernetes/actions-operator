@@ -118,12 +118,18 @@ EOF
     cat <<EOF >> concierge.yaml
 host:
   snaps:
-    - charm/${charm_channel}
-    - charmcraft/${charmcraft_channel}
-    - jq/${jq_channel}
-    - juju-bundle/${juju_bundle_channel}
-    - juju-crashdump/${juju_crashdump_channel}
-    - kubectl
+    charm:
+      channel: ${charm_channel}
+    charmcraft:
+      channel: ${charmcraft_channel}
+    jq:
+      channel: ${jq_channel}
+    juju-bundle:
+      channel: ${juju_bundle_channel}
+    juju-crashdump:
+      channel: ${juju_crashdump_channel}
+    kubectl:
+      channel: stable
 EOF
 
     echo "::group::Concierge (concierge.yaml):"
