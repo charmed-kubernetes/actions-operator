@@ -1,10 +1,11 @@
 import pytest
 from subprocess import check_output
 
+from pytest_operator.plugin import OpsTest
 
 @pytest.mark.abort_on_fail
-async def test_build(ops_test):
-    await ops_test.model.deploy("ch:minio")
+async def test_charm_deploy(ops_test : OpsTest):
+    await ops_test.model.deploy("ch:coredns", trust=True)
     await ops_test.model.wait_for_idle()
 
 
