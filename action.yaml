@@ -1,6 +1,6 @@
 name: "Setup Operator environment"
 description: "Setup a operator environment"
-author: "Adam Stokes"
+author: "Adam Dyess"
 inputs:
   concierge-channel:
     description: |
@@ -80,14 +80,10 @@ inputs:
   container-registry-url:
     description: "Container registry to use"
 runs:
-  using: "composite"
-  steps:
-    - name: Cache
-      uses: ./.github/actions/with-post-steps
-      with:
-        json: ${{ toJson(inputs) }}
-        main: "src/bootstrap/main.sh"
-        post: "src/cleanup/main.sh"
+  using: node20
+  main: ./dist/bootstrap/index.js
+  post: ./dist/cleanup/index.js
+
 branding:
-  icon: "play"
+  icon: "cloud"
   color: "blue"
