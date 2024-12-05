@@ -5709,11 +5709,11 @@ function install_tox(tox_version = "") {
         const hasPipx = yield exec.exec("which pipx", [], ignoreFail);
         const version = tox_version ? `==${tox_version}` : "";
         if (hasPipx === 0) {
-            core.info(`pipx ins available, installing tox${version}`);
+            core.info(`pipx is available, installing tox${version}`);
             yield exec.exec(`pipx install tox${version}`);
             return;
         }
-        core.info("Neither tox nor pip are available, install pipx via apt then tox");
+        core.info("Neither tox nor pipx are available, install pipx via apt then tox");
         yield apt_get("update -yqq");
         yield apt_get("install -yqq pipx");
         yield exec.exec("pipx ensurepath");

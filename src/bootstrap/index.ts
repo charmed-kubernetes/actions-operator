@@ -234,11 +234,11 @@ async function install_tox(tox_version: string = "") {
     const hasPipx = await exec.exec("which pipx", [], ignoreFail);
     const version = tox_version ? `==${tox_version}` : "";
     if (hasPipx === 0) {
-        core.info(`pipx ins available, installing tox${version}`)
+        core.info(`pipx is available, installing tox${version}`)
         await exec.exec(`pipx install tox${version}`)
         return;
     }
-    core.info("Neither tox nor pip are available, install pipx via apt then tox");
+    core.info("Neither tox nor pipx are available, install pipx via apt then tox");
     await apt_get("update -yqq");
     await apt_get("install -yqq pipx");
     await exec.exec("pipx ensurepath");
