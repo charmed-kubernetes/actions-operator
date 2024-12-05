@@ -5718,7 +5718,7 @@ function install_tox(tox_version = "") {
         yield apt_get("install -yqq pipx");
         yield exec.exec("pipx ensurepath");
         yield exec.exec("sudo pipx ensurepath");
-        yield exec.exec(`sudo --preserve-env=http_proxy,https_proxy,no_proxy pipx install tox${version}`);
+        yield exec.exec(`pipx install tox${version}`);
     });
 }
 function run() {

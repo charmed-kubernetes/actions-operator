@@ -243,7 +243,7 @@ async function install_tox(tox_version: string = "") {
     await apt_get("install -yqq pipx");
     await exec.exec("pipx ensurepath");
     await exec.exec("sudo pipx ensurepath");
-    await exec.exec(`sudo --preserve-env=http_proxy,https_proxy,no_proxy pipx install tox${version}`);
+    await exec.exec(`pipx install tox${version}`);
 }
 
 
