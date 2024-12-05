@@ -5492,11 +5492,11 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 const core = __importStar(__nccwpck_require__(2186));
 const exec = __importStar(__nccwpck_require__(1514));
-const os = __importStar(__nccwpck_require__(2087));
 const fs = __importStar(__nccwpck_require__(5747));
-const utils_1 = __nccwpck_require__(2828);
+const os = __importStar(__nccwpck_require__(2087));
 const semver_1 = __importDefault(__nccwpck_require__(1383));
 const ts_dedent_1 = __importDefault(__nccwpck_require__(3604));
+const utils_1 = __nccwpck_require__(2828);
 const ignoreFail = { "ignoreReturnCode": true };
 const user = os.userInfo().username;
 const checkOutput = (cmd, args, options) => __awaiter(void 0, void 0, void 0, function* () {
@@ -5706,18 +5706,19 @@ function install_tox(tox_version = "") {
             exec.exec("tox --version");
             return;
         }
-        const hasPip = yield exec.exec("which pip", [], ignoreFail);
+        const hasPipx = yield exec.exec("which pipx", [], ignoreFail);
         const version = tox_version ? `==${tox_version}` : "";
-        if (hasPip == 0) {
-            core.info(`pip is available, install tox${version}`);
-            yield exec.exec(`pip install tox${version}`);
+        if (hasPipx === 0) {
+            core.info(`pipx ins available, installing tox${version}`);
+            yield exec.exec(`pipx install tox${version}`);
+            return;
         }
-        else {
-            core.info("Neither tox nor pip are available, install python3-pip via apt, then tox");
-            yield apt_get("update -yqq");
-            yield apt_get("install -yqq python3-pip");
-            yield exec.exec(`sudo --preserve-env=http_proxy,https_proxy,no_proxy pip3 install tox${version}`);
-        }
+        core.info("Neither tox nor pip are available, install pipx via apt then tox");
+        yield apt_get("update -yqq");
+        yield apt_get("install -yqq pipx");
+        yield exec.exec("pipx ensurepath");
+        yield exec.exec("sudo pipx ensurepath");
+        yield exec.exec(`sudo --preserve-env=http_proxy,https_proxy,no_proxy pipx install tox${version}`);
     });
 }
 function run() {
