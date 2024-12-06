@@ -234,7 +234,7 @@ async function install_tox(tox_version: string = "") {
         return;
     }
     const version = tox_version ? `==${tox_version}` : "";
-    const pip_path = await checkOutput("which", ["pip"], ignoreFail);
+    const pip_path = (await checkOutput("which", ["pip"], ignoreFail)).trim();
     const is_sys_pip = pip_path === SYSTEM_PIP_PATH;
     core.info(`PIP PATH: ${pip_path} is sys pip: ${is_sys_pip}`)
     // Avoid installing on system managed Python which may break system dependencies.
