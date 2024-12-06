@@ -236,7 +236,6 @@ async function install_tox(tox_version: string = "") {
     const version = tox_version ? `==${tox_version}` : "";
     const pip_path = (await checkOutput("which", ["pip"], ignoreFail)).trim();
     const is_sys_pip = pip_path === SYSTEM_PIP_PATH;
-    core.info(`PIP PATH: ${pip_path} is sys pip: ${is_sys_pip}`)
     // Avoid installing on system managed Python which may break system dependencies.
     if (pip_path && !is_sys_pip) {
         core.info(`externally managed pip is available, installing tox${version}`)
@@ -249,7 +248,7 @@ async function install_tox(tox_version: string = "") {
         await exec.exec(`pipx install tox${version}`)
         return;
     }
-    core.info("Neither tox nor pipx are available, install pipx via apt then tox");
+    core.info("Neither pip, pipx nor tox are available, install pipx via apt then tox");
     await apt_get("update -yqq");
     await apt_get("install -yqq pipx");
     await exec.exec("pipx ensurepath");
