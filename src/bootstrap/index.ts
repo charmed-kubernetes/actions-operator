@@ -6,6 +6,8 @@ import semver from 'semver';
 import dedent from 'ts-dedent';
 import { retryAsyncDecorator } from 'ts-retry/lib/cjs/retry/utils';
 
+const SYSTEM_PIP_PATH = "/usr/bin/pip"
+
 declare var process : {
     env: {
         [key: string]: string
@@ -231,8 +233,16 @@ async function install_tox(tox_version: string = "") {
         exec.exec("tox --version");
         return;
     }
-    const hasPipx = await exec.exec("which pipx", [], ignoreFail);
     const version = tox_version ? `==${tox_version}` : "";
+    const pip_path = await checkOutput("which", ["pip"], ignoreFail);
+    const is_sys_pip = pip_path === SYSTEM_PIP_PATH;
+    // Avoid installing on system managed Python which may break system dependencies.
+    if (pip_path && !is_sys_pip) {
+        core.info(`externally managed pip is available, installing tox${version}`)
+        await exec.exec(`pip install tox${version}`)
+        return
+    }
+    const hasPipx = await exec.exec("which pipx", [], ignoreFail);
     if (hasPipx === 0) {
         core.info(`pipx is available, installing tox${version}`)
         await exec.exec(`pipx install tox${version}`)

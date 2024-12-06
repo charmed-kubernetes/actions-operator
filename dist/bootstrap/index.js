@@ -5497,6 +5497,7 @@ const os = __importStar(__nccwpck_require__(2087));
 const semver_1 = __importDefault(__nccwpck_require__(1383));
 const ts_dedent_1 = __importDefault(__nccwpck_require__(3604));
 const utils_1 = __nccwpck_require__(2828);
+const SYSTEM_PIP_PATH = "/usr/bin/pip";
 const ignoreFail = { "ignoreReturnCode": true };
 const user = os.userInfo().username;
 const checkOutput = (cmd, args, options) => __awaiter(void 0, void 0, void 0, function* () {
@@ -5706,8 +5707,16 @@ function install_tox(tox_version = "") {
             exec.exec("tox --version");
             return;
         }
-        const hasPipx = yield exec.exec("which pipx", [], ignoreFail);
         const version = tox_version ? `==${tox_version}` : "";
+        const pip_path = yield checkOutput("which", ["pip"], ignoreFail);
+        const is_sys_pip = pip_path === SYSTEM_PIP_PATH;
+        // Avoid installing on system managed Python which may break system dependencies.
+        if (pip_path && !is_sys_pip) {
+            core.info(`externally managed pip is available, installing tox${version}`);
+            yield exec.exec(`pip install tox${version}`);
+            return;
+        }
+        const hasPipx = yield exec.exec("which pipx", [], ignoreFail);
         if (hasPipx === 0) {
             core.info(`pipx is available, installing tox${version}`);
             yield exec.exec(`pipx install tox${version}`);
