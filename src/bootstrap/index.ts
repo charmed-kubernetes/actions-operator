@@ -1,10 +1,12 @@
 import * as core from '@actions/core';
 import * as exec from '@actions/exec';
-import * as os from 'os'
 import * as fs from 'fs';
-import { retryAsyncDecorator } from 'ts-retry/lib/cjs/retry/utils';
+import * as os from 'os';
 import semver from 'semver';
 import dedent from 'ts-dedent';
+import { retryAsyncDecorator } from 'ts-retry/lib/cjs/retry/utils';
+
+const SYSTEM_PIP_PATH = "/usr/bin/pip"
 
 declare var process : {
     env: {
@@ -231,17 +233,27 @@ async function install_tox(tox_version: string = "") {
         exec.exec("tox --version");
         return;
     }
-    const hasPip = await exec.exec("which pip", [], ignoreFail);
     const version = tox_version ? `==${tox_version}` : "";
-    if (hasPip == 0) {
-        core.info(`pip is available, install tox${version}`);
-        await exec.exec(`pip install tox${version}`);
-    } else {
-        core.info("Neither tox nor pip are available, install python3-pip via apt, then tox");
-        await apt_get("update -yqq");
-        await apt_get("install -yqq python3-pip");
-        await exec.exec(`sudo --preserve-env=http_proxy,https_proxy,no_proxy pip3 install tox${version}`);
+    const pip_path = (await checkOutput("which", ["pip"], ignoreFail)).trim();
+    const is_sys_pip = pip_path === SYSTEM_PIP_PATH;
+    // Avoid installing on system managed Python which may break system dependencies.
+    if (pip_path && !is_sys_pip) {
+        core.info(`externally managed pip is available, installing tox${version}`)
+        await exec.exec(`pip install tox${version}`)
+        return
     }
+    const hasPipx = await exec.exec("which pipx", [], ignoreFail);
+    if (hasPipx === 0) {
+        core.info(`pipx is available, installing tox${version}`)
+        await exec.exec(`pipx install tox${version}`)
+        return;
+    }
+    core.info("Neither pip, pipx nor tox are available, install pipx via apt then tox");
+    await apt_get("update -yqq");
+    await apt_get("install -yqq pipx");
+    await exec.exec("pipx ensurepath");
+    await exec.exec("sudo pipx ensurepath");
+    await exec.exec(`pipx install tox${version}`);
 }
 
 
