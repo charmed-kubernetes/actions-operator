@@ -53,6 +53,10 @@ inputs:
       Ignored if inputs.provider="lxd" and inputs.channel is non-empty
     required: false
     default: "latest/stable"
+  juju-crashdump-artifact-name:
+    description: "Name of the juju-crashdump artifact to upload"
+    required: false
+    default: ""
   juju-crashdump-channel:
     description: |-
       snap channel for juju-crashdump, installed via snap

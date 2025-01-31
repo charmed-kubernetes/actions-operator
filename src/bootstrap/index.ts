@@ -8,7 +8,7 @@ import { retryAsyncDecorator } from 'ts-retry/lib/cjs/retry/utils';
 
 const SYSTEM_PIP_PATH = "/usr/bin/pip"
 
-declare var process : {
+declare let process : {
     env: {
         [key: string]: string
     }
@@ -30,9 +30,9 @@ const checkOutput = async (cmd: string, args?: string[], options?: exec.ExecOpti
 const os_release = async () => {
     // Read os-release file into an object
     const output = await checkOutput('cat', ['/etc/os-release']);
-    let data: { [name:string]: string} = {};
+    const data: { [name:string]: string} = {};
     output.split('\n').forEach(function(line){
-        let [key, value] = line.split("=", 2);
+        const [key, value] = line.split("=", 2);
         data[key] = value
     })
     return data
@@ -55,7 +55,7 @@ const snap_version = async (snap_name: string) => {
 const microk8sKubeConfig = async () => {
     // Get kubeconfig from microk8s
     let kubeconfig = ""
-    let options = {
+    const options = {
         silent: true,
         listeners: {
             stdout: (data: Buffer) => { kubeconfig += data.toString() }
@@ -90,13 +90,13 @@ function get_microk8s_group() {
 
 
 async function exec_as_microk8s(cmd: string, options = {}) {
-    let group = get_microk8s_group();
+    const group = get_microk8s_group();
     return await exec.exec(`sudo -g ${group} -E ${cmd}`, [], options);
 }
 
 async function retry_until_rc(cmd: string, expected_rc=0, maxRetries=12, timeout=10000) {
     for (let i = 0; i < maxRetries; i++) {
-        let rc = await exec_as_microk8s(cmd, ignoreFail);
+        const rc = await exec_as_microk8s(cmd, ignoreFail);
         if (rc == expected_rc) {
             return true;
         }
@@ -137,7 +137,7 @@ async function microk8s_init(channel, addons, container_registry_url:string) {
                 core.setFailed(`Failed to parse URL of container registry for microk8s: ${err}`);
                 return false;
             }
-            let content = dedent`
+            const content = dedent`
             server = "${container_registry_url}"
             
             [host."${hostname}:${port}"]
@@ -205,7 +205,7 @@ const snap = _retryable_exec("snap");
 const apt_get = _retryable_exec("apt-get");
 
 async function snap_install(name: string, channel: string="", classic: boolean=true) {
-    var args = new Array<string>("install", name, `--channel=${channel}`);
+    const args = new Array<string>("install", name, `--channel=${channel}`);
     if (classic) {args.push("--classic")}
     await snap(args.join(" "))
 }
@@ -325,7 +325,7 @@ async function run() {
 
 
         const release = await os_release();
-        let version_id = semver.coerce(release["VERSION_ID"], {loose: true});
+        const version_id = semver.coerce(release["VERSION_ID"], {loose: true});
         if (version_id && version_id.compare('22.4.0') >= 0) {
             await docker_lxd_clash();
         }
@@ -360,8 +360,8 @@ async function run() {
             core.endGroup();
         } else if (provider === "microstack") {
             core.startGroup("Install MicroStack");
-            let os_series = "focal";
-            let os_region = "microstack";
+            const os_series = "focal";
+            const os_region = "microstack";
     	    if ([null, ""].includes(channel) == false){
             	await snap(`install microstack --beta --devmode --channel=${channel}`);
 	        } else {
@@ -422,6 +422,7 @@ async function run() {
             await microk8sKubeConfig();
         }
         core.endGroup();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch(error: any) {
         core.setFailed(error.message);
     }

@@ -4,7 +4,7 @@ import * as exec from '@actions/exec';
 import * as glob from '@actions/glob';
 import {randomBytes} from 'crypto';
 
-declare var process : {
+declare let process : {
     env: {
         [key: string]: string
     }
@@ -25,9 +25,12 @@ async function unique_number(): Promise<string> {
 
 async function upload_artifact(files: string[]) {
     const artifact_client = new DefaultArtifactClient()
-    const unique_id = `juju-crashdump-${await unique_number()}`;
-    core.info(`uploading artifact ${unique_id}`);
-    const {id, size} = await artifact_client.uploadArtifact(unique_id, files, ".");
+    let artifact_name = core.getInput("juju-crashdump-artifact-name");
+    if (!artifact_name) {
+        artifact_name = `juju-crashdump-${await unique_number()}`;
+    }
+    core.info(`uploading artifact ${artifact_name}`);
+    const {id, size} = await artifact_client.uploadArtifact(artifact_name, files, ".");
     core.info(`artifact ${id} (${size}) was uploaded`);
 }
 
@@ -68,6 +71,7 @@ async function run() {
         }
         core.endGroup();
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch(error: any) {
         core.setFailed(error.message);
     }
