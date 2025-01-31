@@ -18,9 +18,9 @@ async function find_juju_crashdump(): Promise<string[]> {
 async function unique_number(): Promise<string> {
     const dataBuffer = randomBytes(16);
     const hashBuffer = await crypto.subtle.digest('SHA-256', dataBuffer);
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    const hashHex = hashArray.map(byte => byte.toString(16).padStart(2, '0')).join('');
-    return hashHex;    
+    return Array.from(new Uint8Array(hashBuffer))
+        .map(byte => byte.toString(16).padStart(2, '0'))
+        .join('');
 }
 
 async function upload_artifact(files: string[]) {
