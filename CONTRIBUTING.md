@@ -31,5 +31,6 @@ Building using npm:
 ```
 sudo snap install node --channel 20/stable              # installs npm
 npm install                                             # install / update dependencies
-NODE_OPTIONS=--openssl-legacy-provider npm run build    # Run the build
+npm run lint                                            # Run the linter
+npm run build                                           # Run the build
 ```

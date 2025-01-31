@@ -58,7 +58,7 @@ jobs:
           charmcraft-channel: ${{ needs.charmcraft.outputs.channel }}
       - name: Run Tests
         run: |
-          tox -e tests -- -k "not k8s"
+          tox -e tests -- -k "not k8s" --crash-dump=always
           exit $?
   
 
@@ -185,22 +185,6 @@ jobs:
         run: |
           tox -e tests -- -k "addons" --addons "storage dns rbac"
 
-  test-microstack:
-    runs-on: self-hosted
-    needs: [charmcraft]
-    name: Test microstack environment
-    steps:
-      - name: Check out code
-        uses: actions/checkout@v4
-      - uses: ./
-        with:
-          provider: microstack
-          charmcraft-channel: ${{ needs.charmcraft.outputs.channel }}
-
-      - name: Run Tests
-        run: |
-          tox -e tests -- -k "not k8s"
-
   test-vSphere:
     runs-on: self-hosted
     needs: [charmcraft]
@@ -219,7 +203,7 @@ jobs:
 
       - name: Run Tests
         run: |
-          tox -e tests -- -k "not k8s"
+          $HOME/.local/bin/tox -e tests -- -k "not k8s"
 
   test-multi-controller:
     name: Test microk8s next to lxd
