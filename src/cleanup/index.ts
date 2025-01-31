@@ -2,6 +2,7 @@ import {DefaultArtifactClient} from '@actions/artifact';
 import * as core from '@actions/core';
 import * as exec from '@actions/exec';
 import * as glob from '@actions/glob';
+import {randomBytes} from 'crypto';
 
 declare var process : {
     env: {
@@ -14,9 +15,19 @@ async function find_juju_crashdump(): Promise<string[]> {
     return globber.glob();
 }
 
+async function unique_number(): Promise<string> {
+    const dataBuffer = randomBytes(16);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', dataBuffer);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    const hashHex = hashArray.map(byte => byte.toString(16).padStart(2, '0')).join('');
+    return hashHex;    
+}
+
 async function upload_artifact(files: string[]) {
     const artifact_client = new DefaultArtifactClient()
-    const {id, size} = await artifact_client.uploadArtifact("juju-crashdump", files, ".");
+    const unique_id = `juju-crashdump-${await unique_number()}`;
+    core.info(`uploading artifact ${unique_id}`);
+    const {id, size} = await artifact_client.uploadArtifact(unique_id, files, ".");
     core.info(`artifact ${id} (${size}) was uploaded`);
 }
 

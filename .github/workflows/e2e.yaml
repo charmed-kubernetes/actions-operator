@@ -58,7 +58,7 @@ jobs:
           charmcraft-channel: ${{ needs.charmcraft.outputs.channel }}
       - name: Run Tests
         run: |
-          tox -e tests -- -k "not k8s"
+          tox -e tests -- -k "not k8s" --crash-dump=always
           exit $?
   
 
@@ -96,7 +96,7 @@ jobs:
       - name: Run Tests for != 2.x
         if : ${{ startsWith(matrix.juju, 2) != true }}
         run: |
-          tox -e tests -- -k "not k8s" --crash-dump=always
+          tox -e tests -- -k "not k8s"
           exit $?
 
       - name: Run 2.9 Tests
