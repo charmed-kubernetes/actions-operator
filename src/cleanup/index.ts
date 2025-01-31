@@ -1,4 +1,4 @@
-import * as artifact from '@actions/artifact';
+import {DefaultArtifactClient} from '@actions/artifact';
 import * as core from '@actions/core';
 import * as exec from '@actions/exec';
 import * as glob from '@actions/glob';
@@ -15,11 +15,9 @@ async function find_juju_crashdump(): Promise<string[]> {
 }
 
 async function upload_artifact(files: string[]) {
-    const artifact_client = await artifact.create();
-    const result = await artifact_client.uploadArtifact(
-        "juju-crashdump", files, ".", {continueOnError: true}
-    );
-    core.info(`artifact ${result.artifactName} (${result.size}) was uploaded`);
+    const artifact_client = new DefaultArtifactClient()
+    const {id, size} = await artifact_client.uploadArtifact("juju-crashdump", files, ".");
+    core.info(`artifact ${id} (${size}) was uploaded`);
 }
 
 async function destroy_controller(controller_name: string) {
@@ -30,7 +28,6 @@ async function destroy_controller(controller_name: string) {
         await exec.exec(`juju destroy-controller ${controller_name} --no-prompt --destroy-all-models --destroy-storage`);
     }
 }
-
 
 async function run() {
     const controller_name = process.env["CONTROLLER_NAME"];

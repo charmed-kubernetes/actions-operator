@@ -10,8 +10,8 @@
   "author": "Adam Stokes <adam.stokes@canonical.com>",
   "license": "MIT",
   "dependencies": {
-    "@actions/artifact": "^1.1.2",
-    "@actions/core": "^1.5.0",
+    "@actions/artifact": "^2.2.1",
+    "@actions/core": "^1.11.0",
     "@actions/exec": "^1.0.4",
     "@actions/github": "^4.0.0",
     "@actions/glob": "^0.2.0",
