@@ -327,13 +327,13 @@ async function run() {
         await dpkg("--print-architecture", [], dpkg_output)
 
         let args = "";
-        if ((args = fixed_revision_args("jq", "", arch))) {
+        if ((args = fixed_revision_args("jq", "", arch)).length > 0) {
             await snap(`install jq ${args}`);
         }
-        if ((args = fixed_revision_args("juju-bundle", juju_bundle_channel, arch))) {
+        if ((args = fixed_revision_args("juju-bundle", juju_bundle_channel, arch)).length > 0) {
             await snap(`install juju-bundle --classic ${args}`);
         }
-        if ((args = fixed_revision_args("juju-crashdump", juju_crashdump_channel, arch))) {
+        if ((args = fixed_revision_args("juju-crashdump", juju_crashdump_channel, arch)).length > 0) {
             await snap(`install juju-crashdump --classic ${args}`);
         }
 
