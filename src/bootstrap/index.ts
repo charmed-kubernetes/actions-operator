@@ -221,7 +221,7 @@ function fixed_revision_args(app:string, channel:string, arch:string): string{
             s390x:   {                   jq: 9, "juju-crashdump": 247},
             ppc64el: {                   jq: 4, "juju-crashdump": 217},
         };
-        if (!pinning[arch.trim()]) {
+        if (pinning[arch.trim()] === undefined) {
             core.error(`Unsupported architecture ${arch}`);
             return "";
         }
