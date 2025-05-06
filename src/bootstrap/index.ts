@@ -139,10 +139,10 @@ async function microk8s_init(channel, addons, container_registry_url:string) {
             }
             const content = dedent`
             server = "${container_registry_url}"
-            
+
             [host."${hostname}:${port}"]
             capabilities = ["pull", "resolve"]
-            
+
             `;
             await exec.exec(
               "sudo", ["tee", "/var/snap/microk8s/current/args/certs.d/docker.io/hosts.toml"],
@@ -216,8 +216,10 @@ function fixed_revision_args(app:string, channel:string, arch:string): string{
         // snap versions are determined via API request to snapstore
         // https://api.snapcraft.io/v2/snaps/info/<SNAP>?architecture=<ARCH>&fields=revision
         const pinning = {
-            amd64: {"juju-bundle": 25, jq: 6, "juju-crashdump": 271},
-            arm64: {"juju-bundle": 25, jq: 8, "juju-crashdump": 272}
+            amd64:   {"juju-bundle": 25, jq: 6, "juju-crashdump": 271},
+            arm64:   {"juju-bundle": 25, jq: 8, "juju-crashdump": 272},
+            s390x:   {"juju-bundle": 25, jq: 9, "juju-crashdump": 247},
+            ppc64el: {"juju-bundle": 25, jq: 4, "juju-crashdump": 217},
         };
         return `--revision=${pinning[arch.trim()][app]}`
     }
@@ -274,7 +276,7 @@ async function run() {
     const juju_bundle_channel = core.getInput("juju-bundle-channel");
     const juju_crashdump_channel = core.getInput("juju-crashdump-channel")
     const tox_version = core.getInput("tox-version");
-    
+
     const lxd_channel = (provider === "lxd" && channel) ? channel : core.getInput("lxd-channel");
 
     const microk8s_group = get_microk8s_group();

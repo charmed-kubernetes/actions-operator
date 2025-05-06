@@ -29041,10 +29041,10 @@ async function microk8s_init(channel, addons, container_registry_url) {
             }
             const content = (0, ts_dedent_1.default) `
             server = "${container_registry_url}"
-            
+
             [host."${hostname}:${port}"]
             capabilities = ["pull", "resolve"]
-            
+
             `;
             await exec.exec("sudo", ["tee", "/var/snap/microk8s/current/args/certs.d/docker.io/hosts.toml"], { input: Buffer.from(content) });
         }
@@ -29113,7 +29113,9 @@ function fixed_revision_args(app, channel, arch) {
         // https://api.snapcraft.io/v2/snaps/info/<SNAP>?architecture=<ARCH>&fields=revision
         const pinning = {
             amd64: { "juju-bundle": 25, jq: 6, "juju-crashdump": 271 },
-            arm64: { "juju-bundle": 25, jq: 8, "juju-crashdump": 272 }
+            arm64: { "juju-bundle": 25, jq: 8, "juju-crashdump": 272 },
+            s390x: { "juju-bundle": 25, jq: 9, "juju-crashdump": 247 },
+            ppc64el: { "juju-bundle": 25, jq: 4, "juju-crashdump": 217 },
         };
         return `--revision=${pinning[arch.trim()][app]}`;
     }
