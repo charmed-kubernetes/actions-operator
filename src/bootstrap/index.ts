@@ -221,11 +221,16 @@ function fixed_revision_args(app:string, channel:string, arch:string): string{
             s390x:   {                   jq: 9, "juju-crashdump": 247},
             ppc64el: {                   jq: 4, "juju-crashdump": 217},
         };
-        if (pinning[arch.trim()] === undefined) {
+        const arch_pins = pinning[arch.trim()]
+        if ( arch_pins === undefined) {
             core.error(`Unsupported architecture ${arch}`);
             return "";
         }
-        return `--revision=${pinning[arch.trim()][app]}`
+        if ( arch_pins[app] === undefined) {
+            core.error(`Unsupported app ${app} for architecture ${arch}`);
+            return "";
+        }
+        return `--revision=${arch_pins[app]}`
     }
     return `--channel=${channel}`
 }
