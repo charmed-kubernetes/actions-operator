@@ -139,10 +139,10 @@ async function microk8s_init(channel, addons, container_registry_url:string) {
             }
             const content = dedent`
             server = "${container_registry_url}"
-            
+
             [host."${hostname}:${port}"]
             capabilities = ["pull", "resolve"]
-            
+
             `;
             await exec.exec(
               "sudo", ["tee", "/var/snap/microk8s/current/args/certs.d/docker.io/hosts.toml"],
@@ -216,10 +216,21 @@ function fixed_revision_args(app:string, channel:string, arch:string): string{
         // snap versions are determined via API request to snapstore
         // https://api.snapcraft.io/v2/snaps/info/<SNAP>?architecture=<ARCH>&fields=revision
         const pinning = {
-            amd64: {"juju-bundle": 25, jq: 6, "juju-crashdump": 271},
-            arm64: {"juju-bundle": 25, jq: 8, "juju-crashdump": 272}
+            amd64:   {"juju-bundle": 25, jq: 6, "juju-crashdump": 271},
+            arm64:   {"juju-bundle": 25, jq: 8, "juju-crashdump": 272},
+            s390x:   {                   jq: 9, "juju-crashdump": 247},
+            ppc64el: {                   jq: 4, "juju-crashdump": 217},
         };
-        return `--revision=${pinning[arch.trim()][app]}`
+        const arch_pins = pinning[arch.trim()]
+        if ( arch_pins === undefined) {
+            core.error(`Unsupported architecture ${arch}`);
+            return "";
+        }
+        if ( arch_pins[app] === undefined) {
+            core.error(`Unsupported app ${app} for architecture ${arch}`);
+            return "";
+        }
+        return `--revision=${arch_pins[app]}`
     }
     return `--channel=${channel}`
 }
@@ -274,7 +285,7 @@ async function run() {
     const juju_bundle_channel = core.getInput("juju-bundle-channel");
     const juju_crashdump_channel = core.getInput("juju-crashdump-channel")
     const tox_version = core.getInput("tox-version");
-    
+
     const lxd_channel = (provider === "lxd" && channel) ? channel : core.getInput("lxd-channel");
 
     const microk8s_group = get_microk8s_group();
@@ -319,10 +330,17 @@ async function run() {
         const dpkg = _retryable_exec("dpkg");
         const dpkg_output = {listeners:{stdout: (data: Buffer) => {arch += data.toString();}}};
         await dpkg("--print-architecture", [], dpkg_output)
-        await snap(`install jq ${fixed_revision_args("jq", "", arch)}`);
-        await snap(`install juju-bundle --classic ${fixed_revision_args("juju-bundle", juju_bundle_channel, arch)}`);
-        await snap(`install juju-crashdump --classic ${fixed_revision_args("juju-crashdump", juju_crashdump_channel, arch)}`)
 
+        let args = "";
+        if ((args = fixed_revision_args("jq", "", arch)).length > 0) {
+            await snap(`install jq ${args}`);
+        }
+        if ((args = fixed_revision_args("juju-bundle", juju_bundle_channel, arch)).length > 0) {
+            await snap(`install juju-bundle --classic ${args}`);
+        }
+        if ((args = fixed_revision_args("juju-crashdump", juju_crashdump_channel, arch)).length > 0) {
+            await snap(`install juju-crashdump --classic ${args}`);
+        }
 
         const release = await os_release();
         const version_id = semver.coerce(release["VERSION_ID"], {loose: true});
