@@ -29082,7 +29082,7 @@ async function microk8s_init(channel, addons, container_registry_url) {
     await retry_until_rc("microk8s kubectl auth can-i create pods");
     return true;
 }
-const _retryable_exec = (command, initial = 10, maxTry = 5) => {
+const _retryable_exec = (command, initial = 10, maxTry = 6) => {
     // returns an async method capable of running the prog with sudo
     const fn = async (cmd_arg, args, options) => {
         // Run a command with sudo yielding the awaited Promise result
