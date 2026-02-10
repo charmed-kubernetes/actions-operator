@@ -198,7 +198,7 @@ const _retryable_exec = (command: string, initial: number = 10, maxTry: number =
     //    1s
     //    10s
     //    100s
-    const backoff = (param) => param.lastDelay !== undefined ? param.lastDelay * initial : initial;
+    const backoff = (param) => initial ** param.currentTry;
     return retryAsyncDecorator(fn, {delay: backoff, maxTry: maxTry});
 };
 const snap = _retryable_exec("snap");
